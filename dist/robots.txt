@@ -1,0 +1,89 @@
+# Legacy AI — crawlers welcome, including AI assistants and search bots.
+# The private owner workspace (/owner/) and the API are off-limits to everyone.
+
+User-agent: *
+Allow: /
+Disallow: /owner/
+Disallow: /api/
+
+User-agent: GPTBot
+Allow: /
+Disallow: /owner/
+Disallow: /api/
+
+User-agent: OAI-SearchBot
+Allow: /
+Disallow: /owner/
+Disallow: /api/
+
+User-agent: ChatGPT-User
+Allow: /
+Disallow: /owner/
+Disallow: /api/
+
+User-agent: ClaudeBot
+Allow: /
+Disallow: /owner/
+Disallow: /api/
+
+User-agent: Claude-User
+Allow: /
+Disallow: /owner/
+Disallow: /api/
+
+User-agent: Claude-SearchBot
+Allow: /
+Disallow: /owner/
+Disallow: /api/
+
+User-agent: PerplexityBot
+Allow: /
+Disallow: /owner/
+Disallow: /api/
+
+User-agent: Perplexity-User
+Allow: /
+Disallow: /owner/
+Disallow: /api/
+
+User-agent: Google-Extended
+Allow: /
+Disallow: /owner/
+Disallow: /api/
+
+User-agent: Googlebot
+Allow: /
+Disallow: /owner/
+Disallow: /api/
+
+User-agent: Bingbot
+Allow: /
+Disallow: /owner/
+Disallow: /api/
+
+User-agent: Applebot
+Allow: /
+Disallow: /owner/
+Disallow: /api/
+
+User-agent: Applebot-Extended
+Allow: /
+Disallow: /owner/
+Disallow: /api/
+
+User-agent: Amazonbot
+Allow: /
+Disallow: /owner/
+Disallow: /api/
+
+User-agent: meta-externalagent
+Allow: /
+Disallow: /owner/
+Disallow: /api/
+
+User-agent: DuckAssistBot
+Allow: /
+Disallow: /owner/
+Disallow: /api/
+
+Sitemap: https://legacyai.space/sitemap.xml

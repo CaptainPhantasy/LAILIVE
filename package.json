@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "build": "node build-vercel.mjs",
+    "build:seo": "node build-seo.mjs",
     "build:sites": "node build.mjs",
     "dev": "node preview.mjs",
     "test": "node --test test/*.test.js"
