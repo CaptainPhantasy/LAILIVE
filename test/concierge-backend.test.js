@@ -10,13 +10,15 @@ import { createHandlers } from '../lib/concierge/handlers.js';
 import { createOwnerAuth } from '../lib/concierge/auth.js';
 import { catalog, consent, inquiryInput } from '../lib/concierge/contracts.js';
 import { directIdentifiers, groundedIdentifiers, noticeVersion } from '../lib/concierge/identifiers.js';
+import { parseCSV } from '../dist/contact-health/core.js';
 
 // Only ephemeral SQL fixtures and locally signed tokens are used. No database URL,
 // remote identity provider, model provider, or runtime customer records are touched.
 const ownerEmail = 'douglastalley1977@gmail.com';
-const issuer = 'https://owner-auth.example.test/auth';
+const authURL = 'https://owner-auth.example.test/neondb/auth';
+const issuer = new URL(authURL).origin;
 const keys = await generateKeyPair('RS256');
-const requireOwner = createOwnerAuth({ baseURL: issuer, email: ownerEmail, keys: keys.publicKey });
+const requireOwner = createOwnerAuth({ baseURL: authURL, email: ownerEmail, keys: keys.publicKey });
 const migrations = await Promise.all(['0000_legacy_crm.sql', '0001_visitor_contacts.sql'].map(file => readFile(new URL(`../migrations/${file}`, import.meta.url), 'utf8')));
 
 async function database(t) {
@@ -84,7 +86,7 @@ test('draft identifiers enrich one visitor while equal names and IP addresses ne
   const handlers = createHandlers({ getStore: () => store, generation: noGeneration, requireOwner });
   const firstId = randomUUID(), secondId = randomUUID();
   const base = { visitorId: firstId, page: '/intake/', fieldName: 'cg-name', value: 'Test Person', noticeVersion, signals: { collection: 'notice-shown', inquiryReply: false, marketing: false } };
-  for (const body of [base, { ...base, fieldName: 'cg-message', value: 'You can identify this unfinished draft by person@example.test.' }, { ...base, visitorId: secondId }]) {
+  for (const body of [base, { ...base, fieldName: 'cg-email', value: 'person@example.test' }, { ...base, visitorId: secondId }]) {
     const response = await handlers.visitor(request('/api/visitor', { method: 'POST', headers: { 'x-forwarded-for': '192.0.2.25' }, body }));
     assert.equal(response.status, 200);
     assert.deepEqual(await response.json(), { saved: true });
@@ -131,6 +133,8 @@ test('signed owner JWT accepts only the named verified email and rejects missing
     [await token({ emailVerified: false }), 403], [await token({ emailVerified: 'true' }), 403],
     [await token({}, { issuer: 'https://wrong.example.test' }), 401],
     [await token({}, { audience: 'https://wrong.example.test' }), 401],
+    [await token({}, { issuer: authURL }), 401],
+    [await token({}, { audience: authURL }), 401],
     [await token({}, { expires: '1 second ago' }), 401]
   ];
   for (const [value, status] of denied) await assert.rejects(requireOwner(request('/api/owner/inquiries', { token: value })), error => error.status === status);
@@ -160,4 +164,83 @@ test('owner handlers deny unauthorized requests before any store lookup or gener
 
 test('owner JWT must contain a nonempty identity subject', async () => {
   await assert.rejects(requireOwner(request('/api/owner/inquiries', { token: await token({}, { subject: '' }) })), error => error.status === 401 || error.status === 403);
+});
+
+test('free text uses self-attribution extraction, retains all grounded self-details, and excludes third parties', async t => {
+  const { store } = await database(t);
+  const cases = [
+    { text: 'My competitor uses rival@example.test. I am Alex Smith at Oak Street Plumbing.', identifiers: [{kind:'name',value:'Alex Smith'},{kind:'company',value:'Oak Street Plumbing'}] },
+    { text: 'My name is Alex Smith, my company is Oak Street Plumbing, and my email is alex@example.test.', identifiers: [{kind:'name',value:'Alex Smith'},{kind:'company',value:'Oak Street Plumbing'},{kind:'email',value:'alex@example.test'}] },
+    { text: 'My competitor uses rival@example.test.', identifiers: [] }
+  ];
+  let extractionCalls=0;
+  const generation={identify:async text=>{extractionCalls++;const item=cases.find(item=>item.text===text);assert.ok(item);return [...item.identifiers,{kind:'name',value:'Invented Person'}];}};
+  const handlers=createHandlers({getStore:()=>store,generation,requireOwner});
+  for(const item of cases){
+    assert.deepEqual(directIdentifiers({fieldName:'cg-question',value:item.text}),[]);
+    const visitorId=randomUUID();
+    const response=await handlers.visitor(request('/api/visitor',{method:'POST',body:{visitorId,page:'/intake/',fieldName:'cg-question',value:item.text,noticeVersion,signals:{collection:'notice-shown',inquiryReply:false,marketing:false}}}));
+    assert.equal(response.status,item.identifiers.length?200:202);
+    const saved=(await store.listContacts()).find(contact=>contact.visitorId===visitorId);
+    assert.deepEqual(saved?.identifiers||[],item.identifiers);
+  }
+  assert.equal(extractionCalls,cases.length);
+});
+
+test('owner assistant gets real consent receipts separately from unsubmitted checkbox signals', async t => {
+  const {store}=await database(t), input=inquiry();
+  const saved=await store.saveInquiry(input,randomUUID());
+  await store.saveContact({visitorId:randomUUID(),page:'/intake/',fieldName:'cg-email',noticeVersion,signals:{collection:'notice-shown',inquiryReply:true,marketing:true}},[{kind:'email',value:input.email}],null);
+  let context;
+  const handlers=createHandlers({getStore:()=>store,requireOwner,generation:{assistant:async (_question,value)=>{context=value;return {summary:'Test-only provider boundary.',nextSteps:[]};}}});
+  const response=await handlers.ownerAssistant(request('/api/owner/assistant',{method:'POST',token:await token(),body:{question:'Which visitors permitted marketing?'}}));
+  assert.equal(response.status,200);
+  assert.equal(context.contacts[0].signals,undefined);
+  assert.equal(context.contacts[0].draftSignals.marketing,true);
+  assert.match(context.permissionEvidence.draftSignals,/not.*permission/i);
+  const authoritative=context.inquiries.find(item=>item.id===saved.id).consentReceipts;
+  assert.equal(authoritative.length,2);
+  assert.equal(authoritative.find(event=>event.purpose==='marketing').choice,'declined');
+  assert.equal(authoritative.find(event=>event.purpose==='inquiry-reply').choice,'granted');
+  assert.ok(authoritative.every(event=>event.inquiry_id===saved.id && event.channel==='email' && event.action==='visitor-confirmed-inquiry-submit' && event.notice_version===consent.version));
+});
+
+test('owner CSV includes inquiries without capture, escapes formulas, and keeps matching captured records separate', async t => {
+  const {store}=await database(t);
+  const input=inquiry({name:'=SUM(1,2)',company:'@Workshop',message:'=1+1\nPlease discuss the "customer list", including import.'});
+  const saved=await store.saveInquiry(input,randomUUID());
+  const handlers=createHandlers({getStore:()=>store,generation:noGeneration,requireOwner});
+  const ownerToken=await token();
+  const exportRequest=()=>handlers.ownerContacts(request('/api/owner/contacts?format=csv',{token:ownerToken}));
+  const response=await exportRequest(), text=await response.text();
+  assert.equal(response.status,200);
+  assert.ok(text.includes(saved.id),'A real inquiry must be exported even when no capture record exists.');
+  assert.equal(response.headers.get('x-export-limit-per-source'),'10000');
+  const parsed=parseCSV(text), row=Object.fromEntries(parsed.headers.map((key,index)=>[key,parsed.rows[0].values[index]]));
+  assert.equal(parsed.rows.length,1);
+  assert.equal(row['Record source'],'Submitted inquiry');
+  assert.equal(row['Inquiry reference'],saved.id);
+  assert.equal(row['Contact reference'],saved.contactId);
+  assert.equal(row['Name'],"'=SUM(1,2)");
+  assert.equal(row['Company'],"'@Workshop");
+  assert.equal(row['Inquiry text'],"'"+input.message);
+  assert.equal(row['Draft collection signals (not permission)'],'');
+  assert.deepEqual(JSON.parse(row['Service interests']).map(service=>service.id).sort(),[...input.serviceIds].sort());
+  const permissions=JSON.parse(row['Authoritative inquiry consent']);
+  assert.equal(permissions.find(event=>event.purpose==='marketing').choice,'declined');
+  assert.equal(permissions.find(event=>event.purpose==='inquiry-reply').choice,'granted');
+  assert.ok(permissions.every(event=>event.inquiry_id===saved.id && event.action==='visitor-confirmed-inquiry-submit'));
+  const visitorId=randomUUID(), signals={collection:'notice-shown',inquiryReply:true,marketing:true};
+  await store.saveContact({visitorId,page:'/intake/',fieldName:'cg-email',noticeVersion,signals},[{kind:'email',value:input.email}],null);
+  const combined=parseCSV(await (await exportRequest()).text());
+  assert.equal(combined.rows.length,2,'Equal email addresses do not merge captured and submitted records.');
+  const captured=combined.rows.map(record=>Object.fromEntries(combined.headers.map((key,index)=>[key,record.values[index]]))).find(record=>record['Record source']==='Captured visitor details');
+  assert.equal(captured['Visitor reference'],visitorId);
+  assert.equal(captured['Source pages'],'/intake/');
+  assert.equal(captured['Inquiry reference'],'');
+  assert.equal(captured['Authoritative inquiry consent'],'');
+  assert.deepEqual(JSON.parse(captured['Draft collection signals (not permission)']),signals);
+  const plain=await (await handlers.ownerContacts(request('/api/owner/contacts',{token:ownerToken}))).json();
+  assert.deepEqual(Object.keys(plain),['contacts']);
+  assert.equal(plain.contacts.length,1,'The contact-list JSON shape and population remain unchanged.');
 });

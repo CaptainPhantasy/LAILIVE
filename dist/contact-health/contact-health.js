@@ -1,16 +1,17 @@
 import {LIMITS,parseCSV,guessMapping,analyze,contactFor,encodeCSV,draftRows,issueRows} from './core.js';
+import {requestLead} from '../lead-gate.js';
 const $=id=>document.getElementById(id);
-let data=null,report=null,mapping=null,page=0,excluded=new Set(),fileToken=0;
+let data=null,report=null,mapping=null,page=0,excluded=new Set(),receipt=null,checking=false,revision=0;
 const pageSize=25;
 const node=(tag,text,cls)=>{const el=document.createElement(tag);if(text!==undefined)el.textContent=text;if(cls)el.className=cls;return el;};
 function error(message=''){$('error').textContent=message;$('error').hidden=!message;}
-function invalidate(){fileToken++;data=null;report=null;mapping=null;page=0;excluded.clear();$('mapping-panel').hidden=true;$('results').hidden=true;$('status').textContent='';error();}
+function invalidate(){revision++;data=null;report=null;mapping=null;page=0;excluded.clear();$('mapping-panel').hidden=true;$('results').hidden=true;$('status').textContent='';error();}
 function run(action){try{error();action();}catch(e){error(e.message);}}
 $('csv-text').addEventListener('input',invalidate);
 $('delimiter').addEventListener('change',invalidate);
 $('csv-file').addEventListener('change',async()=>{
- const file=$('csv-file').files[0];if(!file)return;invalidate();const token=fileToken;
- try{if(file.size>LIMITS.bytes)throw new Error('Choose a CSV file no larger than 2 MB.');const text=await file.text();if(token!==fileToken||$('csv-file').files[0]!==file)return;$('csv-text').value=text;$('status').textContent='File loaded on this device. Read the columns to continue.';}catch(e){if(token!==fileToken)return;error(e.message);}
+ const file=$('csv-file').files[0];if(!file)return;invalidate();const token=revision;
+ try{if(file.size>LIMITS.bytes)throw new Error('Choose a CSV file no larger than 2 MB.');const text=await file.text();if(token!==revision||$('csv-file').files[0]!==file)return;$('csv-text').value=text;$('status').textContent='File loaded on this device. Read the columns to continue.';}catch(e){if(token!==revision)return;error(e.message);}
 });
 $('clear-all').addEventListener('click',()=>{invalidate();$('csv-file').value='';$('csv-text').value='';$('status').textContent='The page has been cleared.';$('csv-text').focus();});
 $('read-csv').addEventListener('click',()=>run(()=>{
@@ -22,13 +23,21 @@ $('read-csv').addEventListener('click',()=>run(()=>{
  });
  $('loaded-summary').textContent=`${data.rows.length.toLocaleString()} records and ${data.headers.length} columns read.`;$('mapping-panel').hidden=false;$('mapping-heading').focus();
 }));
-document.querySelectorAll('[data-role]').forEach(select=>select.addEventListener('change',()=>{report=null;$('results').hidden=true;}));
-$('check-list').addEventListener('click',()=>run(()=>{
- mapping=Object.fromEntries([...document.querySelectorAll('[data-role]')].map(s=>[s.dataset.role,Number(s.value)]));report=analyze(data,mapping);excluded.clear();page=0;
+document.querySelectorAll('[data-role]').forEach(select=>select.addEventListener('change',()=>{revision++;report=null;$('results').hidden=true;}));
+$('check-list').addEventListener('click',async()=>{
+ if(checking)return;checking=true;$('check-list').disabled=true;error();
+ try {
+ const currentRevision=revision;
+ const nextMapping=Object.fromEntries([...document.querySelectorAll('[data-role]')].map(s=>[s.dataset.role,Number(s.value)]));const nextReport=analyze(data,nextMapping);
+ const saved=receipt||await requestLead({key:'contact-list-project',purpose:'Customer-list project inquiry',serviceIds:['customer-list-that-actually-works'],title:'Make your customer list work for you.',intro:'Tell Douglas what you want to do with your customer records. Once your inquiry is received, review the check here and discuss the right system for your business.',request:'',localNote:'Only the contact details and request in this form are sent to Douglas. Your CSV, customer rows and audit results stay on this device. No email is sent automatically.'});
+ if(!saved){$('status').textContent='Your list is still on this device. Send an inquiry when you are ready to review the check.';return;}
+ receipt=saved;if(currentRevision!==revision){$('status').textContent='Your inquiry was received. The list changed; check it again to review the current records.';return;}
+ mapping=nextMapping;report=nextReport;excluded.clear();page=0;
  const summary=$('summary');summary.replaceChildren();
  for(const [key,label] of [['records','Records checked'],['withIssues','Records to review'],['exactDuplicates','Extra exact rows'],['possibleConflicts','Possible conflicts']]){const wrap=node('div');wrap.append(node('dt',label),node('dd',report.summary[key].toLocaleString()));summary.append(wrap);}
- $('results').hidden=false;renderRecords();$('results-heading').focus();$('status').textContent='Check complete. Review the flagged records before downloading.';
-}));
+ $('results').hidden=false;renderRecords();$('results-heading').focus();$('status').textContent=`Inquiry received (${receipt.id}). The local check is ready to review; your customer rows have not been sent.`;
+ }catch(e){error(e.message);}finally{checking=false;$('check-list').disabled=false;}
+});
 function updateDraft(){if(!report)return;const keep=draftRows(data,report,{excluded,removeDuplicates:$('remove-duplicates').checked,trim:$('trim-spaces').checked});$('draft-summary').textContent=`${keep.length.toLocaleString()} of ${data.rows.length.toLocaleString()} records will be in your draft. ${data.rows.length-keep.length} left out. Original data is unchanged.`;}
 function renderRecords(){
  if(!report)return;const rows=data.rows.filter(row=>$('review-filter').value==='all'||report.byRecord.get(row.id).length);const pages=Math.max(1,Math.ceil(rows.length/pageSize));page=Math.max(0,Math.min(page,pages-1));const container=$('records');container.replaceChildren();
@@ -44,6 +53,6 @@ function renderRecords(){
 }
 $('review-filter').addEventListener('change',()=>{page=0;renderRecords();});$('previous').addEventListener('click',()=>{page--;renderRecords();});$('next').addEventListener('click',()=>{page++;renderRecords();});
 ['remove-duplicates','trim-spaces'].forEach(id=>$(id).addEventListener('change',updateDraft));
-function download(rows,name){const url=URL.createObjectURL(new Blob([encodeCSV(rows)],{type:'text/csv;charset=utf-8'}));const link=node('a');link.href=url;link.download=name;document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);$('status').textContent='Download prepared. Nothing was uploaded or imported.';}
+function download(rows,name){if(!receipt)throw new Error('Send your inquiry before reviewing or downloading the check.');const url=URL.createObjectURL(new Blob([encodeCSV(rows)],{type:'text/csv;charset=utf-8'}));const link=node('a');link.href=url;link.download=name;document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);$('status').textContent='Download prepared on this device. Your CSV and customer rows were not uploaded or imported.';}
 $('download-draft').addEventListener('click',()=>run(()=>{if(!report)throw new Error('Check your list first.');const trim=$('trim-spaces').checked;download([trim?data.headers.map(h=>h.trim()):data.headers,...draftRows(data,report,{excluded,removeDuplicates:$('remove-duplicates').checked,trim})],'legacy-ai-contact-draft.csv');}));
 $('download-issues').addEventListener('click',()=>run(()=>{if(!report)throw new Error('Check your list first.');download(issueRows(data,report),'legacy-ai-contact-issues.csv');}));

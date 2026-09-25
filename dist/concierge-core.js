@@ -33,9 +33,11 @@ export function composeBrief(fields, services) {
   const challenge = clean(fields.challenge);
   if (!challenge) throw new Error('Describe the task you would like to make easier.');
   const lines = [
-    'LEGACY AI — MY WORKFLOW BRIEF',
-    'Prepared from the details I supplied. A discussion brief, not agreed scope or a quote.',
+    'LEGACY AI — MY INQUIRY FOR DOUGLAS',
+    'The work I would like to discuss. This is not agreed scope or a quote.',
     '', 'Business', clean(fields.company) || 'Not supplied',
+    ...(clean(fields.phone) ? ['', 'Phone', clean(fields.phone)] : []),
+    ...(clean(fields.address) ? ['', 'Business address', clean(fields.address)] : []),
     '', 'What I want to make easier', challenge,
     '', 'The result I want', clean(fields.goal) || 'Not supplied',
     '', 'Tools or process I use now', clean(fields.tools) || 'Not supplied',
@@ -56,7 +58,7 @@ export function readChatResponse(value, services) {
 }
 
 export function buildInquiry(fields, serviceIds, services, consent) {
-  if (!consent?.version) throw new Error('The current sharing notice is unavailable. You can still download your brief.');
+  if (!consent?.version) throw new Error('The current inquiry notice is unavailable. Please reconnect before sending, or email douglas@legacyai.space.');
   if (!fields.confirmed) throw new Error('Confirm that Douglas may save these details and reply about this inquiry by email.');
   const name = clean(fields.name), email = clean(fields.email), message = clean(fields.message);
   if (!name) throw new Error('Add the name Douglas should use in his reply.');

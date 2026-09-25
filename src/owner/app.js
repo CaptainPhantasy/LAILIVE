@@ -4,7 +4,9 @@ const node=(tag,text)=>{const el=document.createElement(tag);el.textContent=text
 let auth;
 function status(text,error=false){$('status').textContent=text;$('status').classList.toggle('error',error);}
 async function api(path,options={}){
-  const token=await auth.getJWTToken();
+  const session=await auth.getSession();
+  if(session.error)throw Error(session.error.message || 'Your sign-in session could not be loaded.');
+  const token=session.data?.session?.token;
   if(!token)throw Error('Sign in to view your private records.');
   const r=await fetch(path,{...options,headers:{Authorization:`Bearer ${token}`,Accept:'application/json',...(options.body?{'Content-Type':'application/json'}:{})},cache:'no-store'});
   if(!r.ok){let data;try{data=await r.json();}catch{}throw Error(data?.error||'The request could not be completed.');}
@@ -42,7 +44,7 @@ async function detail(id){
 }
 $('pa-form').onsubmit=async event=>{event.preventDefault();$('pa-ask').disabled=true;status('Your PA is reviewing the saved records…');try{const data=await api('/api/owner/assistant',{method:'POST',body:JSON.stringify({question:$('pa-question').value})}).then(r=>r.json());$('pa-answer').textContent=[data.answer.summary,...data.answer.nextSteps.map(s=>'• '+s),`Based on ${data.coverage.contacts} recent contacts and ${data.coverage.inquiries} recent inquiries.`].join('\n\n');status('');}catch(e){status(e.message,true);}finally{$('pa-ask').disabled=false;}};
 $('refresh').onclick=()=>refresh().catch(e=>status(e.message,true));
-$('export').onclick=async()=>{try{const r=await api('/api/owner/contacts?format=csv');const url=URL.createObjectURL(await r.blob());const a=node('a','');a.href=url;a.download='legacy-visitor-contacts.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);status('Contact sheet prepared. Up to 10,000 most recent contacts are included.');}catch(e){status(e.message,true);}};
+$('export').onclick=async()=>{try{const r=await api('/api/owner/contacts?format=csv');const url=URL.createObjectURL(await r.blob());const a=node('a','');a.href=url;a.download='legacy-visitor-contacts.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);status('Contact sheet prepared: up to 10,000 recent visitor records and 10,000 submitted inquiries, with their separate sources and permissions.');}catch(e){status(e.message,true);}};
 $('sign-in').onclick=async()=>{try{await auth.signIn.social({provider:'google',callbackURL:location.origin+'/owner/'});}catch(e){status('Google sign-in could not start. Please try again.',true);}};
 $('sign-out').onclick=async()=>{await auth.signOut();$('workspace').hidden=true;$('login').hidden=false;$('contacts').replaceChildren();$('inquiries').replaceChildren();$('detail').replaceChildren();$('pa-answer').textContent='';status('Signed out.');};
 try{const r=await fetch('/api/owner/config',{cache:'no-store'});if(!r.ok)throw Error('Owner sign-in is not connected on this deployment.');const config=await r.json();auth=createAuthClient(config.authUrl);$('sign-in').disabled=false;const session=await auth.getSession();if(session.data?.user)await refresh();else status('Sign in to open your workspace.');}catch(e){status(e.message,true);}

@@ -1,4 +1,5 @@
 import { readCatalog, selectedServices, composeBrief, readChatResponse, buildInquiry, readReceipt, MAX_SERVICES } from './concierge-core.js';
+import { readLeadContact, rememberLeadContact } from './lead-gate.js';
 
 function mountGuide() {
   if (document.getElementById('legacy-guide')) return;
@@ -12,14 +13,14 @@ function mountGuide() {
       <div class="cg-tabs" role="tablist" aria-label="Legacy AI guide tools">
         <button type="button" role="tab" id="cg-tab-guide" hidden aria-controls="cg-panel-guide" aria-selected="true" tabindex="0" data-tab="guide">Ask the guide</button>
         <button type="button" role="tab" id="cg-tab-compare" aria-controls="cg-panel-compare" aria-selected="false" tabindex="-1" data-tab="compare">Compare services <span id="cg-count"></span></button>
-        <button type="button" role="tab" id="cg-tab-brief" aria-controls="cg-panel-brief" aria-selected="false" tabindex="-1" data-tab="brief">My brief</button>
+        <button type="button" role="tab" id="cg-tab-brief" aria-controls="cg-panel-brief" aria-selected="false" tabindex="-1" data-tab="brief">Tell Douglas what I need</button>
       </div>
       <div class="cg-content">
         <div class="cg-catalog-state" role="status" aria-live="polite"><span id="cg-catalog-status">Open a tool to load the service catalog.</span> <button id="cg-reload" class="cg-link-button" type="button" hidden>Try loading again</button></div>
         <section class="cg-panel" id="cg-panel-guide" role="tabpanel" aria-labelledby="cg-tab-guide">
           <h3>What would you like to make easier?</h3>
           <p class="cg-intro">Ask about a service, explain your workflow, or find the next useful page. This is an AI guide; scope and terms are agreed with Douglas.</p>
-          <p class="cg-note">Your questions are sent to the AI guide. Avoid private customer information. Sharing an inquiry is a separate step.</p>
+          <p class="cg-note">Your questions are sent to the AI guide. Avoid private customer information. Identifying details you enter may be added to a visitor contact record. Sending an inquiry and agreeing to marketing are separate choices.</p>
           <div id="cg-chat-log" class="cg-chat-log" role="log" aria-label="Conversation with the AI guide" aria-live="polite" aria-relevant="additions"></div>
           <div id="cg-suggestions" class="cg-suggestions"></div>
           <form id="cg-chat-form">
@@ -30,34 +31,37 @@ function mountGuide() {
           <p id="cg-chat-status" class="cg-status" role="status" aria-live="polite"></p>
         </section>
         <section class="cg-panel" id="cg-panel-compare" role="tabpanel" aria-labelledby="cg-tab-compare" hidden>
-          <h3>A shortlist you can see side by side.</h3><p class="cg-intro">Choose up to three services. These descriptions come directly from the service catalog. Your selections carry into your brief.</p>
+          <h3>Find the right conversation to start.</h3><p class="cg-intro">Compare up to three services, then tell Douglas which parts fit your business and what you need them to do.</p>
           <div id="cg-selectors" class="cg-selectors"></div>
           <p id="cg-selection-status" class="cg-status" role="status" aria-live="polite"></p>
           <div id="cg-comparison" class="cg-comparison"></div>
           <p class="cg-note">Fit, integrations, pricing and timing are confirmed with Douglas for your business.</p>
-          <button type="button" class="cg-primary" data-open-tab="brief">Bring my shortlist into a brief <span aria-hidden="true">→</span></button>
+          <button type="button" class="cg-primary" data-open-tab="brief">Discuss my shortlist with Douglas <span aria-hidden="true">→</span></button>
         </section>
         <section class="cg-panel" id="cg-panel-brief" role="tabpanel" aria-labelledby="cg-tab-brief" hidden>
-          <h3>Leave with something useful.</h3><p class="cg-intro">Turn your details and shortlist into a brief you can edit and keep. Building and downloading it does not send an inquiry.</p>
+          <h3>Tell Douglas what you want to get done.</h3><p class="cg-intro">Describe the work, review your request, and send it to Douglas with a reply address. The brief helps him understand your business before the conversation.</p>
           <form id="cg-brief-form" class="cg-brief-form">
             <div class="cg-field"><label for="cg-company">Business name <span>(optional)</span></label><input id="cg-company" name="company" maxlength="160" autocomplete="organization"></div>
             <div class="cg-field"><label for="cg-challenge">What would you like to make easier?</label><textarea id="cg-challenge" name="challenge" rows="3" maxlength="1500" required></textarea></div>
+            <details class="cg-context"><summary>Add context (optional)</summary>
+            <div class="cg-field"><label for="cg-phone">Phone (optional)</label><input id="cg-phone" name="phone" type="tel" maxlength="80" autocomplete="tel"></div>
+            <div class="cg-field"><label for="cg-address">Business address (optional)</label><input id="cg-address" name="address" maxlength="300" autocomplete="street-address"></div>
             <div class="cg-field"><label for="cg-goal">What would a useful result look like? <span>(optional)</span></label><textarea id="cg-goal" name="goal" rows="2" maxlength="1000"></textarea></div>
             <div class="cg-field"><label for="cg-tools">Tools or process you use now <span>(optional)</span></label><textarea id="cg-tools" name="tools" rows="2" maxlength="700"></textarea></div>
             <div class="cg-field"><label for="cg-timing">Timing <span>(optional)</span></label><input id="cg-timing" name="timing" maxlength="250"></div>
             <div class="cg-field"><label for="cg-questions">Questions to discuss <span>(optional)</span></label><textarea id="cg-questions" name="questions" rows="2" maxlength="1000"></textarea></div>
+            </details>
             <div class="cg-field" id="cg-next-step-field" hidden><label for="cg-next-steps">AI-suggested next steps — review or remove</label><textarea id="cg-next-steps" name="suggestions" rows="3" maxlength="1500"></textarea></div>
             <p id="cg-brief-shortlist" class="cg-note">No services selected yet. A shortlist is optional.</p>
-            <div><button id="cg-build" class="cg-primary" type="submit">Build my brief</button><p id="cg-rebuild-note" class="cg-note" hidden>Building again replaces the editable draft below with these fields and your current shortlist.</p></div>
+            <div><button id="cg-build" class="cg-primary" type="submit">Review my inquiry</button><p id="cg-rebuild-note" class="cg-note" hidden>Reviewing again replaces the draft below with these fields and your current shortlist.</p></div>
           </form>
           <div id="cg-draft-block" class="cg-draft-block" hidden>
-            <label for="cg-draft">Your editable brief</label><textarea id="cg-draft" rows="15" maxlength="8000" spellcheck="true"></textarea>
-            <div class="cg-actions"><button type="button" id="cg-download" class="cg-secondary">Download brief (.txt)</button><button type="button" id="cg-copy" class="cg-secondary">Copy brief</button></div>
-            <p class="cg-note">Your draft stays on this page until you download it. You can bring it to a conversation with Douglas.</p>
+            <label for="cg-draft">Review what Douglas will receive</label><textarea id="cg-draft" rows="12" maxlength="8000" spellcheck="true"></textarea>
+            <p class="cg-note">Edit the request before sending. Identifying details entered in these fields may be saved to help Douglas understand visitors; permission to reply is a separate choice below.</p>
           </div>
           <p id="cg-brief-status" class="cg-status" role="status" aria-live="polite"></p>
-          <details id="cg-share" class="cg-share" hidden><summary>Ask Douglas about this brief</summary>
-            <p>Share the brief and contact details below. Your chat history is not included.</p>
+          <details id="cg-share" class="cg-share" hidden open><summary>Send this inquiry to Douglas</summary>
+            <p>Give Douglas a way to follow up about this work. Your chat history is not included.</p>
             <form id="cg-inquiry-form"><fieldset id="cg-share-fields"><legend class="cg-sr-only">Details and choices for sharing this inquiry</legend>
               <div class="cg-field"><label for="cg-name">Your name</label><input id="cg-name" maxlength="120" autocomplete="name" required></div>
               <div class="cg-field"><label for="cg-email">Email for a reply about this inquiry</label><input id="cg-email" type="email" maxlength="254" autocomplete="email" required></div>
@@ -66,7 +70,7 @@ function mountGuide() {
               <label class="cg-choice"><input id="cg-confirm" type="checkbox" required><span id="cg-inquiry-notice">The current sharing notice must load before sending.</span></label>
               <label class="cg-choice"><input id="cg-marketing" type="checkbox"><span id="cg-marketing-notice">Optional email updates — the current notice must load first.</span></label>
               <p class="cg-note">Reply about this inquiry and optional email marketing are separate choices. Email is the only contact channel offered here.</p>
-              <button id="cg-send" class="cg-primary" type="submit" disabled>Send inquiry</button>
+              <button id="cg-send" class="cg-primary" type="submit" disabled>Send my request to Douglas</button>
             </fieldset></form>
             <p id="cg-save-status" class="cg-status" role="status" aria-live="polite"></p>
             <div id="cg-receipt" class="cg-receipt" hidden><h4>Inquiry received.</h4><p id="cg-receipt-text"></p><p>Your inquiry is saved for Douglas to review. This is not an appointment confirmation.</p><button id="cg-saved-download" type="button" class="cg-secondary">Download the saved brief</button></div>
@@ -128,7 +132,7 @@ function mountGuide() {
         if (response.status === 429) throw new Error('The guide is busy. Please wait a moment before trying again.');
         if (response.status === 409 && url === '/api/inquiries') throw new Error('The sharing notice changed. Reload the catalog, review the notice and send again.');
         if (response.status === 400 || response.status === 422) throw new Error('Please check your details and try again. The service did not accept this request.');
-        throw new Error(url === '/api/inquiries' ? 'Saving could not be confirmed. Keep your brief and try again.' : 'The guide could not connect. You can still prepare and download a brief.');
+        throw new Error(url === '/api/inquiries' ? 'Saving could not be confirmed. Your request is still here; please try again.' : 'The guide could not connect. Please try again or email douglas@legacyai.space.');
       }
       return data;
     } finally { window.clearTimeout(timeout); }
@@ -138,19 +142,21 @@ function mountGuide() {
     if (state.loading) return;
     state.loading = true; $('cg-reload').hidden = true; status('cg-catalog-status', 'Loading the service catalog…');
     try {
-      const catalog = readCatalog(await requestJSON('/service-catalog.json'));
+      let data; try { data = await requestJSON('/api/concierge/catalog'); } catch { data = await requestJSON('/service-catalog.json'); }
+      const catalog = readCatalog(data);
       if (state.catalog?.consent?.version !== catalog.consent?.version) { $('cg-confirm').checked = false; $('cg-marketing').checked = false; }
       state.catalog = catalog; state.loaded = true;
       $('cg-tab-guide').hidden = !catalog.capabilities.chat;
-      $('cg-share').hidden = !catalog.capabilities.inquiries;
+      $('cg-share').hidden = !$('cg-draft').value.trim();
       if (catalog.capabilities.chat) $('cg-launcher').firstChild.textContent = 'Ask Legacy AI ';
       state.ids = state.ids.filter(id => catalog.services.some(service => service.id === id));
-      $('cg-inquiry-notice').textContent = catalog.consent?.inquiryText || 'The sharing notice is unavailable. You can still download your brief.';
+      $('cg-inquiry-notice').textContent = catalog.consent?.inquiryText || 'The current inquiry notice is unavailable. Please reconnect before sending.';
       $('cg-marketing-notice').textContent = catalog.consent?.marketingText || 'Optional email updates are unavailable.';
-      $('cg-send').disabled = !catalog.consent || !!state.receipt;
+      $('cg-send').disabled = !catalog.capabilities.inquiries || !catalog.consent || !!state.receipt;
       $('cg-ask').disabled = state.chatBusy;
       status('cg-catalog-status', `${catalog.services.length} services from the Legacy AI catalog.`);
       renderComparison();
+      if (!catalog.capabilities.inquiries) { status('cg-save-status', 'The inquiry service is not connected right now. Please try again or email douglas@legacyai.space.', true); $('cg-reload').hidden = false; }
     } catch (error) { status('cg-catalog-status', error.message || 'The catalog could not load.', true); $('cg-reload').hidden = false; }
     finally { state.loading = false; }
   }
@@ -241,24 +247,18 @@ function mountGuide() {
       const fields = Object.fromEntries(new FormData(event.currentTarget));
       const selected = state.catalog ? selectedServices(state.ids, state.catalog.services) : [];
       $('cg-draft').value = composeBrief(fields, selected); $('cg-draft-block').hidden = false;
-      $('cg-share-company').value = fields.company; $('cg-build').textContent = 'Replace draft from fields'; $('cg-rebuild-note').hidden = false;
-      invalidateApproval(); $('cg-draft').focus(); status('cg-brief-status', 'Brief prepared from your details. Edit it below, then download it.');
+      $('cg-share-company').value = fields.company || $('cg-share-company').value; $('cg-build').textContent = 'Update inquiry from fields'; $('cg-rebuild-note').hidden = false;
+      $('cg-share').hidden = false; $('cg-share').open = true;
+      const contact = readLeadContact(); for (const key of ['name', 'email', 'company']) { const input = $(key === 'company' ? 'cg-share-company' : `cg-${key}`); if (!input.value) input.value = contact[key]; }
+      invalidateApproval(); $('cg-draft').focus(); status('cg-brief-status', 'Review your request, then add your reply details and send it to Douglas.');
     } catch (error) { status('cg-brief-status', error.message, true); }
   });
   $('cg-draft').addEventListener('input', invalidateApproval);
-  ['cg-name', 'cg-email', 'cg-share-company'].forEach(id => $(id).addEventListener('input', invalidateApproval));
+  ['cg-name', 'cg-email', 'cg-share-company'].forEach(id => $(id).addEventListener('input', () => { invalidateApproval(); rememberLeadContact({ name: $('cg-name').value, email: $('cg-email').value, company: $('cg-share-company').value }); }));
   function download(text, filename) {
     const url = URL.createObjectURL(new Blob([text], { type: 'text/plain;charset=utf-8' }));
     const link = document.createElement('a'); link.href = url; link.download = filename; document.body.append(link); link.click(); link.remove(); window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
-  $('cg-download').addEventListener('click', () => {
-    if (!$('cg-draft').value.trim()) { status('cg-brief-status', 'Add some text to your brief before downloading.', true); return; }
-    download($('cg-draft').value, 'legacy-ai-my-workflow-brief.txt'); status('cg-brief-status', 'Brief download prepared.');
-  });
-  $('cg-copy').addEventListener('click', async () => {
-    try { await navigator.clipboard.writeText($('cg-draft').value); status('cg-brief-status', 'Brief copied.'); }
-    catch { $('cg-draft').focus(); $('cg-draft').select(); status('cg-brief-status', 'Your browser blocked copying. The brief is selected so you can copy it manually.', true); }
-  });
   $('cg-share').addEventListener('toggle', () => { if ($('cg-share').open && !$('cg-draft').value.trim()) status('cg-save-status', 'Build and review your brief above before sending.', true); });
   $('cg-inquiry-form').addEventListener('submit', async event => {
     event.preventDefault(); if (state.receipt || $('cg-send').disabled) return;
@@ -272,6 +272,8 @@ function mountGuide() {
     try {
       const receipt = readReceipt(await requestJSON('/api/inquiries', { method: 'POST', headers: { 'Idempotency-Key': state.attempt.key }, body: serialized }));
       state.receipt = receipt; state.savedText = receipt.brief || payload.message;
+      rememberLeadContact(payload);
+      root.querySelectorAll('#cg-brief-form input,#cg-brief-form textarea,#cg-brief-form button,#cg-selectors select').forEach(input => { input.disabled = true; }); $('cg-draft').readOnly = true;
       $('cg-receipt-text').textContent = `Reference ${receipt.id} · Saved ${new Date(receipt.createdAt).toLocaleString()}`;
       $('cg-receipt').hidden = false; status('cg-save-status', 'Your inquiry is saved.');
       $('cg-send').textContent = 'Inquiry received';
@@ -281,7 +283,7 @@ function mountGuide() {
       if (error.message.includes('sharing notice changed')) { $('cg-confirm').checked = false; $('cg-marketing').checked = false; $('cg-reload').hidden = false; $('cg-send').disabled = true; }
     }
   });
-  $('cg-saved-download').addEventListener('click', () => download(state.savedText, `legacy-ai-inquiry-${state.receipt.id}.txt`));
+  $('cg-saved-download').addEventListener('click', () => { if (state.receipt) download(state.savedText, `legacy-ai-inquiry-${state.receipt.id}.txt`); });
 }
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mountGuide, { once: true });
