@@ -32,3 +32,7 @@ The downloadable field guide is `dist/catalog.pdf` (23 pages, 5.7 MB). Its porta
 ## Original Sites publication
 
 `.openai/hosting.json` retains the ChatGPT Sites project association. `npm run build:sites` regenerates its Worker in `dist/server/`. That Worker proxies Board requests to the live domain; Vercel uses the direct API instead, preventing a self-proxy loop. The Sites source remote and this GitHub repository are separate publishing destinations.
+
+## Working service tools
+
+`/contact-health/` checks visitor-supplied CSV data entirely in the browser. It flags missing details, exact duplicate rows and shared-contact conflicts; visitors review exclusions and download a draft or issues report. It does not upload contact data or infer permission to contact anyone. Run its focused checks with `node --test test/contact-health.test.js`.
