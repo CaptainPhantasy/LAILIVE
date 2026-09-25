@@ -23,7 +23,7 @@ npm run dev
 
 The preview runs at `http://localhost:4187`. Public sources are in `dist/`. Vercel's build copies only public assets into `.vercel-static/`; `/api/board` is a native Vercel Function using the existing real AI Gateway backend. `vercel.json` selects the static framework and sets the Board function duration to 120 seconds.
 
-The Board uses the existing project's `AI_GATEWAY_API_KEY` or Vercel OIDC. No credentials are stored here. Its prompt and provider contract were ported from the prior production website. See `docs/board-port.md` for provenance and limits. Tests verify routing/validation and the streaming contract without making paid model requests.
+The deployed AI features use Vercel's project identity (OIDC); local runs use an explicit `AI_GATEWAY_API_KEY`. No credentials are stored here. Its prompt and provider contract were ported from the prior production website. See `docs/board-port.md` for provenance and limits. Tests verify routing/validation and the streaming contract without making paid model requests.
 
 ## Catalog
 

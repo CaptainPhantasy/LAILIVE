@@ -292,7 +292,7 @@ function mountGuide() {
       $('cg-share-company').value = fields.company || $('cg-share-company').value; $('cg-build').textContent = 'Update inquiry from fields'; $('cg-rebuild-note').hidden = false;
       $('cg-share').hidden = false; $('cg-share').open = true;
       const contact = readLeadContact(); for (const key of ['name', 'email', 'company']) { const input = $(key === 'company' ? 'cg-share-company' : `cg-${key}`); if (!input.value) input.value = contact[key]; }
-      invalidateApproval(); $('cg-draft').focus(); status('cg-brief-status', 'Review your request, then add your reply details and send it to Douglas.');
+      invalidateApproval(); status('cg-save-status', ''); $('cg-draft').focus(); status('cg-brief-status', 'Review your request, then add your reply details and send it to Douglas.');
     } catch (error) { status('cg-brief-status', error.message, true); }
   });
   $('cg-draft').addEventListener('input', invalidateApproval);
