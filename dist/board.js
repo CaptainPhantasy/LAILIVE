@@ -1,6 +1,27 @@
   const BOARD_ENDPOINT = '/api/board';
   const BOARD_STORAGE_KEY = 'legacyai_board_spun_v1';
 
+  // Render report structure only after streaming, with every source character escaped.
+  function formatBoardReport(text) {
+    const escape = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    const inline = s => escape(s).replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    let html = '', paragraph = [], list = '', fenced = false, code = [];
+    const flush = () => { if (paragraph.length) { html += '<p>' + paragraph.map(inline).join('<br>') + '</p>'; paragraph = []; } if (list) { html += '</' + list + '>'; list = ''; } };
+    for (const line of text.split(/\r?\n/)) {
+      if (/^```/.test(line)) { flush(); if (fenced) { html += '<pre>' + escape(code.join('\n')) + '</pre>'; code = []; } fenced = !fenced; continue; }
+      if (fenced) { code.push(line); continue; }
+      const heading = line.match(/^#{1,6}\s+(.+?)\s*#*$/) || line.match(/^\*\*([^*]+)\*\*:?\s*$/) || line.match(/^(Majority (?:recommendation|opinion)|Dissent|Risks|Next steps|Recommendation):?\s*$/i);
+      const bullet = line.match(/^\s*[-*]\s+(.+)$/), numbered = line.match(/^\s*\d+[.)]\s+(.+)$/);
+      if (heading) { flush(); html += '<h3>' + inline(heading[1]) + '</h3>'; }
+      else if (/^\s*([-*_])\1{2,}\s*$/.test(line)) { flush(); html += '<hr>'; }
+      else if (bullet || numbered) { const tag = bullet ? 'ul' : 'ol'; if (list !== tag) { flush(); html += '<' + tag + '>'; list = tag; } html += '<li>' + inline((bullet || numbered)[1]) + '</li>'; }
+      else if (!line.trim()) flush();
+      else { if (list) flush(); paragraph.push(line); }
+    }
+    flush(); if (code.length) html += '<pre>' + escape(code.join('\n')) + '</pre>';
+    return html;
+  }
+
   // Tiny, safe-ish markdown-ish renderer — enough for headings, bold, italics,
   // tables, horizontal rules. Escapes HTML first so the model can't inject DOM.
   function boardAlreadySpent() {
@@ -40,6 +61,7 @@
     output.classList.add('active');
     output.classList.add('board-output-caret');
     output.innerHTML = '';
+    output.classList.remove('report-formatted');
 
     let fullText = '';
 
@@ -74,6 +96,9 @@
 
       fullText += decoder.decode();
       if (!fullText.trim()) throw new Error('The board returned an empty report.');
+      output.innerHTML = formatBoardReport(fullText);
+      output.classList.add('report-formatted');
+      output.scrollTop = 0;
 
       // Done
       output.classList.remove('board-output-caret');

@@ -21,6 +21,7 @@
   const grid = document.getElementById('painGrid');
   const selected = new Set();
 
+const painIcons = ["M8 3H5a2 2 0 0 0-2 2c0 9 7 16 16 16a2 2 0 0 0 2-2v-3l-5-2-2 3a14 14 0 0 1-7-7l3-2Z", "M6 2h8l4 4v16H6Z M14 2v5h4 M9 11h6 M9 15h6 M9 19h4", "M12 3v4 M12 17v4 M3 12h4 M17 12h4 M17 12a5 5 0 1 1-10 0a5 5 0 1 1 10 0", "M3 4h18v13H3Z M8 21h8 M12 17v4", "M16 10a6 6 0 1 1-12 0a6 6 0 1 1 12 0 M15 15l6 6", "m12 3 3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1Z", "M6 2h12v20l-3-2-3 2-3-2-3 2Z M9 7h6 M9 11h6 M9 15h4", "m4 16 12-12 4 4L8 20H4Z M14 6l4 4", "M10 8 7 5a4 4 0 0 0-5 6l4 4a4 4 0 0 0 6 0 M14 16l3 3a4 4 0 0 0 5-6l-4-4a4 4 0 0 0-6 0 M8 12l8 0", "M4 3v18h17 M8 17v-5 M13 17V8 M18 17V4", "M21 12a9 9 0 1 1-18 0a9 9 0 1 1 18 0 M15 9l-2 5-4 1 2-5Z", "M12 2 3 6v6c0 6 9 10 9 10s9-4 9-10V6Z M8 12l3 3 5-6"];
   if(grid){
   PAINS.forEach((p, i) => {
     const chip = document.createElement('button');
@@ -28,6 +29,7 @@
     chip.dataset.id = p.id;
     chip.innerHTML = `
       <span class="chip-num">${String(i + 1).padStart(2, '0')}</span>
+      <svg class="pain-icon" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${painIcons[i]}"></path></svg>
       <span class="chip-text">${p.text}</span>
       <span class="chip-check"></span>
     `;
@@ -95,3 +97,13 @@
 document.getElementById("intakeCounter").setAttribute("aria-live","polite");
 if(document.modelContext?.registerTool){const lifecycle=new AbortController();window.addEventListener('pagehide',()=>lifecycle.abort(),{once:true});try{Promise.resolve(document.modelContext.registerTool({name:'select_pain_points',description:'Select business pain points and update the visible matching solutions.',inputSchema:{type:'object',properties:{painIds:{type:'array',uniqueItems:true,items:{type:'string',enum:PAINS.map(p=>p.id)}}},required:['painIds'],additionalProperties:false},annotations:{readOnlyHint:false},execute(input){if(!input||!Array.isArray(input.painIds)||Object.keys(input).some(k=>k!=='painIds')||input.painIds.some(id=>!PAINS.some(p=>p.id===id))||new Set(input.painIds).size!==input.painIds.length)throw new Error('Supply unique supported pain IDs.');const want=new Set(input.painIds);[...grid.querySelectorAll('button')].forEach((b,i)=>{if(selected.has(PAINS[i].id)!==want.has(PAINS[i].id))b.click()});return {selected:[...selected],solutions:[...document.querySelectorAll('.match-pill')].map(a=>({name:a.textContent,url:a.getAttribute('href')}))}}},{signal:lifecycle.signal})).catch(()=>{});}catch{}}
 }
+
+// Accessible file tabs preview each existing chapter; links keep the full catalog reachable.
+const folderTabs = [...document.querySelectorAll('.folder-tabs [role="tab"]')];
+function selectFolder(tab) {
+  folderTabs.forEach(t => { const active = t === tab; t.setAttribute('aria-selected', String(active)); t.tabIndex = active ? 0 : -1; document.getElementById(t.getAttribute('aria-controls')).hidden = !active; });
+}
+folderTabs.forEach((tab,i) => {
+  tab.addEventListener('click', () => selectFolder(tab));
+  tab.addEventListener('keydown', e => { let n; if(e.key==='ArrowRight') n=(i+1)%folderTabs.length; if(e.key==='ArrowLeft') n=(i+folderTabs.length-1)%folderTabs.length; if(e.key==='Home') n=0; if(e.key==='End') n=folderTabs.length-1; if(n!==undefined){e.preventDefault();selectFolder(folderTabs[n]);folderTabs[n].focus();} });
+});
