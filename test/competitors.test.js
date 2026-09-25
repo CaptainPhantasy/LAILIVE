@@ -165,8 +165,8 @@ test('HTTPS transport pins its lookup and enforces content and byte limits', asy
   )
   assert.equal(page.html, 'Public company description')
   for (const options of [
-    { headers: { 'content-length': '500001' } },
-    { text: 'x'.repeat(500001) },
+    { headers: { 'content-length': '2000001' } },
+    { text: 'x'.repeat(2000001) },
   ])
     await assert.rejects(
       requestPinnedPage(
@@ -174,7 +174,7 @@ test('HTTPS transport pins its lookup and enforces content and byte limits', asy
         { address: '8.8.8.8', family: 4 },
         { request: transportFixture(options) },
       ),
-      /500 KB/,
+      /2 MB/,
     )
   await assert.rejects(
     requestPinnedPage(
