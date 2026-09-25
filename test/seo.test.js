@@ -29,19 +29,22 @@ test('every public page has a unique title, description, canonical, social card 
   }
 });
 
-test('the owner workspace stays out of search indexes and the sitemap', () => {
+test('the owner workspace stays out of search indexes while staying crawlable', () => {
   assert.match(read('dist/owner/index.html'), /<meta name="robots" content="noindex/);
+  const vercel = JSON.parse(read('vercel.json'));
+  const ownerHeaders = vercel.headers.find(h => h.source === '/owner/(.*)');
+  assert(ownerHeaders && ownerHeaders.headers.some(h => h.key === 'X-Robots-Tag' && h.value.includes('noindex')), 'vercel.json must send X-Robots-Tag noindex for /owner/');
   const robots = read('dist/robots.txt');
-  assert.match(robots, /Disallow: \/owner\//);
+  assert(!/Disallow: \/owner\//.test(robots), 'robots.txt must not block /owner/, or crawlers can never read its noindex directive');
   assert.match(robots, /Disallow: \/api\//);
   for (const bot of ['GPTBot', 'OAI-SearchBot', 'ChatGPT-User', 'ClaudeBot', 'PerplexityBot', 'Google-Extended', 'Bingbot', 'Applebot', 'Amazonbot']) assert(robots.includes(`User-agent: ${bot}`), `robots.txt should name ${bot}`);
   assert.match(robots, /Sitemap: https:\/\/legacyai\.space\/sitemap\.xml/);
-  assert(!read('dist/sitemap.xml').includes('/owner/'), 'the sitemap must not list the owner workspace');
 });
 
-test('the sitemap lists exactly the public pages', () => {
+test('the sitemap lists exactly the public pages and nothing else', () => {
   const sitemap = read('dist/sitemap.xml');
-  for (const route of Object.keys(pages)) assert(sitemap.includes(`<loc>https://legacyai.space${route}</loc>`), `sitemap is missing ${route}`);
+  const locs = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(m => m[1]);
+  assert.deepEqual(new Set(locs), new Set(Object.keys(pages).map(route => `https://legacyai.space${route}`)));
 });
 
 test('the service list in the structured data matches the catalog exactly', () => {

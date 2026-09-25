@@ -13,7 +13,8 @@ const pages = [
   { url: '/deal/', priority: '0.8' },
   { url: '/board/', priority: '0.7' },
 ];
-const summary = 'Legacy AI builds and runs pre-built AI systems for owner-operated businesses across Indiana — phone answering, lead follow-up, scheduling, reviews, reporting and customer records. 54 productized solutions, already in production. One call. One person. One bill.';
+const count = catalog.services.length;
+const summary = `Legacy AI builds and runs pre-built AI systems for owner-operated businesses across Indiana — phone answering, lead follow-up, scheduling, reviews, reporting and customer records. ${count} productized solutions, already in production. One call. One person. One bill.`;
 
 const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -30,7 +31,7 @@ Legacy AI is led by founder Douglas Talley and based in Brown County, Indiana. E
 
 ## Pages
 - [Thesis — what Legacy AI is](${site}/): The promise, the proof points and the working philosophy.
-- [All 54 solutions](${site}/solutions/): The full menu in five pillars — Fill The Calendar, Run The Business, Look Bigger Than You Are, Be Everywhere Without Working More, Sleep At Night.
+- [All ${count} solutions](${site}/solutions/): The full menu in five pillars — Fill The Calendar, Run The Business, Look Bigger Than You Are, Be Everywhere Without Working More, Sleep At Night.
 - [Intake](${site}/intake/): Pick your pain points and see which solutions fix them.
 - [The Deal](${site}/deal/): Five steps from a 30-minute call to launch and ongoing improvement, plus the six industries already served.
 - [The Board](${site}/board/): Five AI advisor perspectives examine one business decision — recommendation, dissent, risks, next steps.
@@ -62,7 +63,7 @@ Legacy AI is led by founder Douglas Talley and based in Brown County, Indiana. E
 ## Industries already served
 Auto body & collision; plumbers, HVAC and contractors; chiropractic & wellness; restaurants & hospitality; professional services; property inspection. If your business has customers, Legacy AI can build for it.
 
-## The 54 solutions
+## The ${count} solutions
 ${catalog.services.map(s => `- ${s.name} (${s.tag}): ${s.body}`).join('\n')}
 
 ## Pages
@@ -83,7 +84,7 @@ fs.writeFileSync(path.join(root, 'llms-full.txt'), llmsFull);
 const servicesList = {
   '@context': 'https://schema.org',
   '@type': 'ItemList',
-  name: 'Legacy AI — 54 productized AI solutions',
+  name: `Legacy AI — ${count} productized AI solutions`,
   numberOfItems: catalog.services.length,
   itemListElement: catalog.services.map((s, i) => ({
     '@type': 'ListItem',
