@@ -7,6 +7,12 @@
   "functions": {
     "api/board.js": {
       "maxDuration": 120
+    },
+    "api/concierge.js": {
+      "maxDuration": 60
+    },
+    "api/owner/*.js": {
+      "maxDuration": 60
     }
   },
   "headers": [

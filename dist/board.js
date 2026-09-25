@@ -42,6 +42,25 @@
     const questionEcho = document.getElementById('demoQuestion');
     const spent        = document.getElementById('boardSpent');
 
+    if (submitBtn.disabled) return;
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Your next step…';
+    input.disabled = true;
+    let inquiryReceipt;
+    try {
+      const { requestLead } = await import('/lead-gate.js');
+      inquiryReceipt = await requestLead({
+        key: `board:${question}`, purpose: 'Board decision and next-steps inquiry',
+        title: 'Where should Douglas follow up?',
+        intro: 'Send Douglas the decision you are working through so he can discuss the next steps with you. Once your inquiry is received, the Board report appears here.',
+        request: question,
+      });
+    } catch (error) {
+      errorBox.textContent = error.message || 'The inquiry service could not connect. Please try again.';
+      errorBox.classList.add('active');
+    }
+    if (!inquiryReceipt) { submitBtn.disabled = false; submitBtn.textContent = 'Convene the Board'; input.disabled = false; return; }
+
     // Lock UI
     submitBtn.disabled = true;
     submitBtn.textContent = 'Convening…';
@@ -68,7 +87,7 @@
     try {
       const response = await fetch(BOARD_ENDPOINT, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-Legacy-Inquiry': inquiryReceipt.id },
         body: JSON.stringify({ question: question })
       });
 

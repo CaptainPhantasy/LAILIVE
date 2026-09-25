@@ -23,7 +23,7 @@ npm run dev
 
 The preview runs at `http://localhost:4187`. Public sources are in `dist/`. Vercel's build copies only public assets into `.vercel-static/`; `/api/board` is a native Vercel Function using the existing real AI Gateway backend. `vercel.json` selects the static framework and sets the Board function duration to 120 seconds.
 
-The Board uses the existing project's `AI_GATEWAY_API_KEY` or Vercel OIDC. No credentials are stored here. Its prompt and provider contract were ported from the prior production website. See `docs/board-port.md` for provenance and limits. Tests verify routing/validation and the streaming contract without making paid model requests.
+The deployed AI features use Vercel's project identity (OIDC); local runs use an explicit `AI_GATEWAY_API_KEY`. No credentials are stored here. Its prompt and provider contract were ported from the prior production website. See `docs/board-port.md` for provenance and limits. Tests verify routing/validation and the streaming contract without making paid model requests.
 
 ## Catalog
 
@@ -32,3 +32,17 @@ The downloadable field guide is `dist/catalog.pdf` (23 pages, 5.7 MB). Its porta
 ## Original Sites publication
 
 `.openai/hosting.json` retains the ChatGPT Sites project association. `npm run build:sites` regenerates its Worker in `dist/server/`. That Worker proxies Board requests to the live domain; Vercel uses the direct API instead, preventing a self-proxy loop. The Sites source remote and this GitHub repository are separate publishing destinations.
+
+## Working service tools
+
+`/contact-health/` checks visitor-supplied CSV data entirely in the browser. It flags missing details, exact duplicate rows and shared-contact conflicts. The report opens after a real inquiry is saved; the inquiry contains the visitor’s contact details and request, never the uploaded contact list. Run its focused checks with `node --test test/contact-health.test.js`.
+
+The “Compare & plan” panel compares up to three actual catalog services and helps visitors send a project inquiry. A brief download appears only after the server confirms the saved inquiry. Board questions also require a real saved inquiry before generation. Contact details carry across tools in the same tab; each new request records its own reply and optional marketing choices. The brief also explains actual service selections, opened service links and separately labeled AI recommendations. Visitors can remove suggested interests before sending. These signals stay in the tab until included in the reviewed inquiry. There are no canned AI responses or pretend receipts.
+
+Public forms also save visitor-stated identifying details, including unfinished forms, with a visible notice and source evidence. Free-text identification distinguishes the visitor’s details from third-party references. Anonymous activity alone does not create a contact. Draft checkbox signals are separate from submitted consent receipts.
+
+## Private CRM and assistant
+
+`/owner/` uses managed Neon Google sign-in. Every owner API independently verifies the signed session and permits only the explicitly named, verified owner email. Visitor contacts, source evidence, inquiry submissions, separate consent events, and unsent reply drafts use PostgreSQL. The PA reads actual records; public chat has only the approved service catalog. Contact export is CSV: up to 10,000 recent captured visitor records and 10,000 submitted inquiries, with service interests, source context and authoritative consent separate from draft signals. Identifiers are visitor-stated; names/IP addresses never automatically merge people.
+
+Preview storage is the dedicated `legacy-ai-site-crm` database. Apply migrations in filename order through the authenticated database console. Database credentials are Vercel Preview environment variables; none are committed. The Auth URL is public configuration. The runtime uses the existing Vercel AI Gateway and the configured/default model with bounded requests and no automatic retries. `node --test test/concierge-backend.test.js` verifies real SQL transactions and cryptographically signed owner-token boundaries. Live provider login and model calls are verified separately from these local checks. Production needs its own storage/auth configuration before this preview branch is merged.

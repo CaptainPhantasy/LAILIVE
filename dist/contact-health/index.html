@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Check your customer CSV for missing details, exact duplicate rows and conflicting contact information. Review and download a draft on your own device.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>Contact-list health check · Legacy AI Solutions</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./contact-health.css">
+  <link rel="stylesheet" href="/lead-gate.css">
+  <script type="module" src="./contact-health.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to checker</a>
+  <header class="ch-header">
+    <a class="ch-brand" href="/">LEGACY AI <span>SOLUTIONS</span></a>
+    <nav aria-label="Main navigation"><a href="/solutions/#customer-list-that-actually-works">The customer-list service</a><a href="/intake/">Find your starting point</a></nav>
+  </header>
+  <main id="main">
+    <div class="ch-intro">
+      <div><p class="ch-kicker">A useful first step / Customer records</p><h1>Give your contact<br>list a checkup.</h1><p class="ch-dek">Start a conversation about a customer list your business can rely on. Bring your CSV, tell Douglas what you need it to do, and review the local health check after your inquiry is received.</p></div>
+      <aside class="ch-note" aria-label="How your data is handled"><p class="ch-kicker">On your device</p><h2>Your list stays here.</h2><p>The CSV check runs in this page. Your customer rows and audit results are not uploaded, saved by this checker or sent to a CRM. Only the separate inquiry details you review and send go to Douglas.</p><p>No records are merged. No permission to contact anyone is inferred.</p><p class="ch-small">Closing or reloading the page clears the checker. After sending your inquiry, you can download the check to use in your conversation.</p></aside>
+    </div>
+    <noscript><p class="ch-error">This checker needs JavaScript to read and check your CSV on your device.</p></noscript>
+    <section class="ch-panel" aria-labelledby="source-heading">
+      <div class="ch-step"><span aria-hidden="true">01</span><div><h2 id="source-heading">Bring your list.</h2><p>Use a UTF-8 CSV with column names in the first row. Up to 2 MB, 10,000 records and 100 columns.</p></div></div>
+      <div class="ch-source-tools"><label class="ch-file">Choose a CSV file<input id="csv-file" type="file" accept=".csv,.txt,.tsv,text/csv,text/plain,text/tab-separated-values" aria-describedby="file-note"></label><label>Column separator<select id="delimiter"><option value=",">Comma</option><option value=";">Semicolon</option><option value="tab">Tab</option></select></label></div>
+      <p id="file-note" class="ch-small">Or paste the contents below. Quoted commas, line breaks and escaped quotation marks are supported.</p>
+      <label for="csv-text">Your CSV</label><textarea id="csv-text" rows="9" spellcheck="false" autocomplete="off" autocapitalize="off" aria-describedby="file-note" placeholder="Paste your own CSV here"></textarea>
+      <div class="ch-actions"><button id="read-csv" type="button">Read my columns</button><button id="clear-all" class="ch-secondary" type="button">Clear this page</button></div>
+    </section>
+    <p id="status" class="ch-status" role="status" aria-live="polite"></p><p id="error" class="ch-error" role="alert" hidden></p>
+    <section id="mapping-panel" class="ch-panel" aria-labelledby="mapping-heading" hidden>
+      <div class="ch-step"><span aria-hidden="true">02</span><div><h2 id="mapping-heading" tabindex="-1">Match your columns.</h2><p id="loaded-summary"></p><p>Check the suggested matches. Choose a name column and at least one contact column. All other columns stay in your draft.</p></div></div>
+      <div class="ch-mapping">
+        <label>Full name<select data-role="name" aria-label="Full name column"></select></label>
+        <label>First name<select data-role="first" aria-label="First name column"></select></label>
+        <label>Last name<select data-role="last" aria-label="Last name column"></select></label>
+        <label>Email<select data-role="email" aria-label="Email column"></select></label>
+        <label>Phone<select data-role="phone" aria-label="Phone column"></select></label>
+      </div>
+      <p class="ch-small">A name can come from full name, first name or last name. Only the contact columns you select are checked for missing details.</p>
+      <button id="check-list" type="button">Discuss my list &amp; review the check</button>
+    </section>
+    <section id="results" class="ch-panel" aria-labelledby="results-heading" hidden>
+      <div class="ch-step"><span aria-hidden="true">03</span><div><h2 id="results-heading" tabindex="-1">Review before you move anything.</h2><p>Shared email addresses and phone numbers can belong to different people. These checks flag questions; they do not identify or merge people.</p></div></div>
+      <dl id="summary" class="ch-summary"></dl>
+      <div class="ch-review-tools"><label>Show records<select id="review-filter"><option value="issues">With checks to review</option><option value="all">All records</option></select></label><p class="ch-small">Open a record to see every original field. You can leave a record out of the draft. To correct values, edit the source CSV and check it again.</p></div>
+      <div id="records" class="ch-records"></div>
+      <nav class="ch-pager" aria-label="Review pages"><button id="previous" class="ch-secondary" type="button">Previous</button><span id="page-label" aria-live="polite"></span><button id="next" class="ch-secondary" type="button">Next</button></nav>
+      <div class="ch-downloads">
+        <h3>Choose what goes into your draft.</h3>
+        <label class="ch-check"><input id="remove-duplicates" type="checkbox"><span>Leave out extra exact duplicate rows <small>Keeps the first original occurrence. Case, spacing and every field must match exactly.</small></span></label>
+        <label class="ch-check"><input id="trim-spaces" type="checkbox"><span>Trim spaces at the start and end of every cell <small>Values inside each cell stay in the same order.</small></span></label>
+        <p id="draft-summary" role="status" class="ch-draft-summary"></p>
+        <p class="ch-small">Downloads preserve every column. To make spreadsheets safer to open, cells beginning with formula characters get an apostrophe prefix, including phone numbers beginning with +. No consent or marketing status is added or changed.</p>
+        <div class="ch-actions"><button id="download-draft" type="button">Download reviewed draft</button><button id="download-issues" class="ch-secondary" type="button">Download issues report</button></div>
+        <p class="ch-small">The draft can still contain unresolved checks. Nothing is imported or sent when you download.</p>
+      </div>
+    </section>
+    <section class="ch-next" aria-labelledby="next-heading"><p class="ch-kicker">From a spreadsheet to a working system</p><h2 id="next-heading">A cleaner list is a starting point.</h2><p>For a customer system fitted to your business, explore <a href="/solutions/#customer-list-that-actually-works">Customer List That Actually Works</a> or <a href="/intake/">find the right next step</a>.</p></section>
+  </main>
+  <footer><span>Legacy AI Solutions</span><a href="mailto:douglas@legacyai.space">douglas@legacyai.space</a><a href="/">legacyai.space</a></footer>
+</body>
+</html>
