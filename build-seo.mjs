@@ -99,11 +99,25 @@ const servicesList = {
     },
   })),
 };
-const file = path.join(root, 'solutions', 'index.html');
-const html = fs.readFileSync(file, 'utf8');
-const start = '<!--seo:services-jsonld-->', end = '<!--/seo:services-jsonld-->';
-const a = html.indexOf(start), b = html.indexOf(end);
-if (a < 0 || b < 0) throw new Error('seo:services-jsonld markers are missing in dist/solutions/index.html');
-const block = `${start}\n<script type="application/ld+json">${JSON.stringify(servicesList)}</script>\n${end}`;
-fs.writeFileSync(file, html.slice(0, a) + block + html.slice(b + end.length));
-console.log('Wrote sitemap.xml, llms.txt, llms-full.txt and', catalog.services.length, 'service entries into /solutions/.');
+const offersList = {
+  '@context': 'https://schema.org',
+  '@type': 'OfferCatalog',
+  '@id': `${site}/#offers`,
+  name: 'Legacy AI solutions',
+  numberOfItems: catalog.services.length,
+  itemListElement: catalog.services.map((s, i) => ({
+    '@type': 'Offer',
+    position: i + 1,
+    item: { '@type': 'Service', name: s.name, url: `${site}/solutions/#${s.id}` },
+  })),
+};
+function inject(file, marker, block) {
+  const html = fs.readFileSync(file, 'utf8');
+  const start = `<!--seo:${marker}-->`, end = `<!--/seo:${marker}-->`;
+  const a = html.indexOf(start), b = html.indexOf(end);
+  if (a < 0 || b < 0) throw new Error(`seo:${marker} markers are missing in ${file}`);
+  fs.writeFileSync(file, html.slice(0, a) + `${start}\n<script type="application/ld+json">${JSON.stringify(block)}</script>\n${end}` + html.slice(b + end.length));
+}
+inject(path.join(root, 'solutions', 'index.html'), 'services-jsonld', servicesList);
+inject(path.join(root, 'index.html'), 'offers-jsonld', offersList);
+console.log('Wrote sitemap.xml, llms.txt, llms-full.txt,', catalog.services.length, 'service entries into /solutions/ and the offer catalog into the home page.');

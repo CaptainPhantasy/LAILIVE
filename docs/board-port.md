@@ -21,8 +21,8 @@ The existing backend is one AI SDK generation whose system prompt describes five
 1. Copy `api/board.js` and `lib/board-handler.js` into the LAILIVE repository root's corresponding directories. Do not copy `node_modules` or provenance into the served static assets.
 2. Merge this folder's package dependencies and `type: module` into the root package manifest, preserving the parent task's build script. Commit the resulting lockfile. If using this package/lock as the root starting point, add the existing static-site build command and the desired test script deliberately.
 3. Merge `vercel.fragment.json` into the parent's Vercel configuration. The function must be discovered as `/api/board`, separate from `dist` static files. Use the plain/static framework setting, not the former Next.js setting; the parent owns exact build/output configuration.
-4. Keep the existing browser request to `/api/board`. On Vercel that path must invoke this native function, **not** `board-proxy.mjs` or the Worker in `dist/server`. There is no `legacyai.space` fetch in this port, eliminating the self-proxy loop when that domain moves onto LAILIVE.
-5. The existing Sites Worker can continue using its proxy to the domain, which will now reach the direct backend. Do not replace the Sites build with a Vercel-only adapter unless that is separately intended.
+4. Keep the existing browser request to `/api/board`; that path must invoke this native function. There is no `legacyai.space` fetch in this port, so the deployment serves its own backend with no proxy loop.
+5. `board-proxy.mjs` exists only for the local preview server (`npm run dev`); deployments use the native function.
 6. Configure function duration at 120 seconds and verify the selected project runtime allows it. The implementation uses Node's standard Request/Response/ReadableStream APIs and does not require Next.js or `@vercel/node`. Vercel supports a native `export default { fetch(request) {} }` in root `api/` files: [official Node runtime documentation](https://vercel.com/docs/functions/runtimes/node-js).
 
 ## Authentication and dependencies

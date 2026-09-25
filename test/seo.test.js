@@ -72,6 +72,23 @@ test('the home page answers owner questions with matching FAQ structured data', 
   }
 });
 
+test('the home page presents the business for local search with its offer catalog', () => {
+  const html = read('dist/index.html');
+  const graph = ld(html).find(b => b['@graph']);
+  const org = graph['@graph'].find(node => node['@type'] === 'ProfessionalService');
+  assert(org, 'the home page needs a ProfessionalService entity');
+  assert.equal(org['@id'], 'https://legacyai.space/#org');
+  assert(Array.isArray(org.areaServed) && org.areaServed.length >= 2, 'areaServed should name the service area');
+  assert(org.contactPoint && org.contactPoint.email, 'a contact point should be present');
+  const catalog = JSON.parse(read('dist/service-catalog.json'));
+  const offers = ld(html).find(b => b['@type'] === 'OfferCatalog');
+  assert(offers, 'the home page needs the offer catalog (run npm run build:seo)');
+  assert.equal(offers['@id'], 'https://legacyai.space/#offers');
+  assert.equal(org.hasOfferCatalog['@id'], offers['@id'], 'the business entity must reference the offer catalog');
+  assert.equal(offers.itemListElement.length, catalog.services.length);
+  assert.equal(offers.itemListElement[0].item.url, `https://legacyai.space/solutions/#${catalog.services[0].id}`);
+});
+
 test('the AI-facing files exist and the social card is a real JPEG', () => {
   const llms = read('dist/llms.txt');
   assert.match(llms, /^# Legacy AI/);

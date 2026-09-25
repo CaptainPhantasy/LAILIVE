@@ -32,14 +32,14 @@
   }
 
   async function runLiveBoard(question) {
-    const status       = document.getElementById('demoStatus');
+    const status       = document.getElementById('boardStatus');
     const streamStatus = document.getElementById('boardStreamStatus');
     const streamLabel  = document.getElementById('boardStreamLabel');
     const output       = document.getElementById('boardOutput');
     const errorBox     = document.getElementById('boardError');
     const submitBtn    = document.getElementById('boardSubmit');
     const input        = document.getElementById('boardQuestionInput');
-    const questionEcho = document.getElementById('demoQuestion');
+    const questionEcho = document.getElementById('boardQuestion');
     const spent        = document.getElementById('boardSpent');
 
     if (submitBtn.disabled) return;
@@ -153,7 +153,7 @@
     const submitBtn   = document.getElementById('boardSubmit');
     const inputBlock  = document.getElementById('boardInputBlock');
     const spent       = document.getElementById('boardSpent');
-    const questionEcho= document.getElementById('demoQuestion');
+    const questionEcho= document.getElementById('boardQuestion');
 
     // Prefill from ?q= if present (Ryan's hand-off URL)
     try {
@@ -173,7 +173,7 @@
         }
       } catch (_) {}
       spent.classList.add('active');
-      document.getElementById('demoStatus').textContent = '◉ session complete';
+      document.getElementById('boardStatus').textContent = '◉ session complete';
       return;
     }
 
@@ -195,4 +195,4 @@
   initBoardSession();
 
 
-document.getElementById("boardError").setAttribute("role","alert");document.getElementById("demoStatus").setAttribute("aria-live","polite");
+document.getElementById("boardError").setAttribute("role","alert");document.getElementById("boardStatus").setAttribute("aria-live","polite");
