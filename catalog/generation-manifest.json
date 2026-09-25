@@ -1,0 +1,56 @@
+[
+  {
+    "key": "cover-town",
+    "scene": "A thriving small-town workshop street at dawn, with modest brick storefronts and a carpenter's workshop, a florist's buckets, a bicycle and a small unbranded service van. No people necessary. Copper sunrise behind the rooftops. The road leads into the scene; a rooted oak tree anchors one edge. A human, hardworking town, never a generic financial city.",
+    "prompt": "Use case: illustration-story. Asset type: one standalone editorial illustration for a printed small-business field guide. Style: refined contemporary hand-carved linocut / woodcut print, bold tactile ink areas, confident cut lines, subtle cream paper grain, spare geometric shapes with human craftsmanship, dignified adult editorial book art. A cohesive three-ink series, STRICT palette: deep petrol blue #203744, copper #B86C42, warm white #F5F1E8; tiny muted forest accents at most. Landscape composition about 3:2, 1536x1024 or higher. Fill the frame without decorative border. Restrained details and large areas of readable shape. No photography, no photorealistic rendering, no 3D, no gradients. No lettering, words, numbers, logos, watermarks, page designs, UI, captions, contact sheet or multiple panels. Exactly ONE finished artwork. Scene: A thriving small-town workshop street at dawn, with modest brick storefronts and a carpenter's workshop, a florist's buckets, a bicycle and a small unbranded service van. No people necessary. Copper sunrise behind the rooftops. The road leads into the scene; a rooted oak tree anchors one edge. A human, hardworking town, never a generic financial city.",
+    "tool": "built-in image_gen",
+    "calls": 1,
+    "retries": 0,
+    "optimized_artwork": "cover-town.jpg"
+  },
+  {
+    "key": "chapter-calendar",
+    "scene": "An open garden gate at the entrance to a small independent workshop courtyard, with a clear curved path leading toward a warmly lit open workshop door. Early morning light. The open gate and path represent welcoming opportunity. No clocks, calendars, written signs or symbols.",
+    "prompt": "Use case: illustration-story. Asset type: one standalone editorial illustration for a printed small-business field guide. Style: refined contemporary hand-carved linocut / woodcut print, bold tactile ink areas, confident cut lines, subtle cream paper grain, spare geometric shapes with human craftsmanship, dignified adult editorial book art. A cohesive three-ink series, STRICT palette: deep petrol blue #203744, copper #B86C42, warm white #F5F1E8; tiny muted forest accents at most. Landscape composition about 3:2, 1536x1024 or higher. Fill the frame without decorative border. Restrained details and large areas of readable shape. No photography, no photorealistic rendering, no 3D, no gradients. No lettering, words, numbers, logos, watermarks, page designs, UI, captions, contact sheet or multiple panels. Exactly ONE finished artwork. Scene: An open garden gate at the entrance to a small independent workshop courtyard, with a clear curved path leading toward a warmly lit open workshop door. Early morning light. The open gate and path represent welcoming opportunity. No clocks, calendars, written signs or symbols.",
+    "tool": "built-in image_gen",
+    "calls": 1,
+    "retries": 0,
+    "optimized_artwork": "chapter-calendar.jpg"
+  },
+  {
+    "key": "chapter-operations",
+    "scene": "A carefully ordered workshop workbench viewed from a slight overhead angle, with a working pair of human hands measuring a small timber piece, a carpenter's square, pencil, neatly arranged hand tools and a closed ledger. Show only anatomically clear hands, no faces. The objects form a calm deliberate rhythm, not clutter.",
+    "prompt": "Use case: illustration-story. Asset type: one standalone editorial illustration for a printed small-business field guide. Style: refined contemporary hand-carved linocut / woodcut print, bold tactile ink areas, confident cut lines, subtle cream paper grain, spare geometric shapes with human craftsmanship, dignified adult editorial book art. A cohesive three-ink series, STRICT palette: deep petrol blue #203744, copper #B86C42, warm white #F5F1E8; tiny muted forest accents at most. Landscape composition about 3:2, 1536x1024 or higher. Fill the frame without decorative border. Restrained details and large areas of readable shape. No photography, no photorealistic rendering, no 3D, no gradients. No lettering, words, numbers, logos, watermarks, page designs, UI, captions, contact sheet or multiple panels. Exactly ONE finished artwork. Scene: A carefully ordered workshop workbench viewed from a slight overhead angle, with a working pair of human hands measuring a small timber piece, a carpenter's square, pencil, neatly arranged hand tools and a closed ledger. Show only anatomically clear hands, no faces. The objects form a calm deliberate rhythm, not clutter.",
+    "tool": "built-in image_gen",
+    "calls": 1,
+    "retries": 0,
+    "optimized_artwork": "chapter-operations.jpg"
+  },
+  {
+    "key": "chapter-presence",
+    "scene": "A proud modest independent shopfront on a quiet small-town corner: handsome solid door, broad clean display window, simple striped awning, a potted plant and a small service bicycle. No signage lettering. Emphasize craft, confidence and visibility at a human scale, without making it look like a large corporation.",
+    "prompt": "Use case: illustration-story. Asset type: one standalone editorial illustration for a printed small-business field guide. Style: refined contemporary hand-carved linocut / woodcut print, bold tactile ink areas, confident cut lines, subtle cream paper grain, spare geometric shapes with human craftsmanship, dignified adult editorial book art. A cohesive three-ink series, STRICT palette: deep petrol blue #203744, copper #B86C42, warm white #F5F1E8; tiny muted forest accents at most. Landscape composition about 3:2, 1536x1024 or higher. Fill the frame without decorative border. Restrained details and large areas of readable shape. No photography, no photorealistic rendering, no 3D, no gradients. No lettering, words, numbers, logos, watermarks, page designs, UI, captions, contact sheet or multiple panels. Exactly ONE finished artwork. Scene: A proud modest independent shopfront on a quiet small-town corner: handsome solid door, broad clean display window, simple striped awning, a potted plant and a small service bicycle. No signage lettering. Emphasize craft, confidence and visibility at a human scale, without making it look like a large corporation.",
+    "tool": "built-in image_gen",
+    "calls": 1,
+    "retries": 0,
+    "optimized_artwork": "chapter-presence.jpg"
+  },
+  {
+    "key": "chapter-content",
+    "scene": "A small-town rooftop with a distinctive simple broadcast aerial above a workshop, carrying gentle concentric signal arcs toward several varied neighborhood rooftops. Include a few abstract paper-like message shapes carried outward in the composition, without letters or digital UI. A visual metaphor for one useful message reaching many places. Elegant, spacious, not a diagram.",
+    "prompt": "Use case: illustration-story. Asset type: one standalone editorial illustration for a printed small-business field guide. Style: refined contemporary hand-carved linocut / woodcut print, bold tactile ink areas, confident cut lines, subtle cream paper grain, spare geometric shapes with human craftsmanship, dignified adult editorial book art. A cohesive three-ink series, STRICT palette: deep petrol blue #203744, copper #B86C42, warm white #F5F1E8; tiny muted forest accents at most. Landscape composition about 3:2, 1536x1024 or higher. Fill the frame without decorative border. Restrained details and large areas of readable shape. No photography, no photorealistic rendering, no 3D, no gradients. No lettering, words, numbers, logos, watermarks, page designs, UI, captions, contact sheet or multiple panels. Exactly ONE finished artwork. Scene: A small-town rooftop with a distinctive simple broadcast aerial above a workshop, carrying gentle concentric signal arcs toward several varied neighborhood rooftops. Include a few abstract paper-like message shapes carried outward in the composition, without letters or digital UI. A visual metaphor for one useful message reaching many places. Elegant, spacious, not a diagram.",
+    "tool": "built-in image_gen",
+    "calls": 1,
+    "retries": 0,
+    "optimized_artwork": "chapter-content.jpg"
+  },
+  {
+    "key": "chapter-protection",
+    "scene": "A sturdy lighthouse overlooking a small sheltered working harbor after a storm, with a few securely moored fishing and service boats, breakwater and a calm patch of water. A copper beam of light opens across the darker water. The scene should feel calm, prepared and dependable rather than dangerous.",
+    "prompt": "Use case: illustration-story. Asset type: one standalone editorial illustration for a printed small-business field guide. Style: refined contemporary hand-carved linocut / woodcut print, bold tactile ink areas, confident cut lines, subtle cream paper grain, spare geometric shapes with human craftsmanship, dignified adult editorial book art. A cohesive three-ink series, STRICT palette: deep petrol blue #203744, copper #B86C42, warm white #F5F1E8; tiny muted forest accents at most. Landscape composition about 3:2, 1536x1024 or higher. Fill the frame without decorative border. Restrained details and large areas of readable shape. No photography, no photorealistic rendering, no 3D, no gradients. No lettering, words, numbers, logos, watermarks, page designs, UI, captions, contact sheet or multiple panels. Exactly ONE finished artwork. Scene: A sturdy lighthouse overlooking a small sheltered working harbor after a storm, with a few securely moored fishing and service boats, breakwater and a calm patch of water. A copper beam of light opens across the darker water. The scene should feel calm, prepared and dependable rather than dangerous.",
+    "tool": "built-in image_gen",
+    "calls": 1,
+    "retries": 0,
+    "optimized_artwork": "chapter-protection.jpg"
+  }
+]
