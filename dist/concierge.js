@@ -1,5 +1,6 @@
 import { readCatalog, selectedServices, composeBrief, readChatResponse, buildInquiry, readReceipt, MAX_SERVICES } from './concierge-core.js';
 import { readLeadContact, rememberLeadContact } from './lead-gate.js';
+import { recordIntent, rankIntent, readIntent, saveIntent } from './service-intent.js';
 
 function mountGuide() {
   if (document.getElementById('legacy-guide')) return;
@@ -53,6 +54,7 @@ function mountGuide() {
             </details>
             <div class="cg-field" id="cg-next-step-field" hidden><label for="cg-next-steps">AI-suggested next steps — review or remove</label><textarea id="cg-next-steps" name="suggestions" rows="3" maxlength="1500"></textarea></div>
             <p id="cg-brief-shortlist" class="cg-note">No services selected yet. A shortlist is optional.</p>
+            <div id="cg-intent" class="cg-intent" hidden><h4>Services worth discussing</h4><p class="cg-note">From services you opened or compared, and suggestions from the guide. Remove anything that does not fit. You can edit the wording before sending.</p><div id="cg-intent-list"></div></div>
             <div><button id="cg-build" class="cg-primary" type="submit">Review my inquiry</button><p id="cg-rebuild-note" class="cg-note" hidden>Reviewing again replaces the draft below with these fields and your current shortlist.</p></div>
           </form>
           <div id="cg-draft-block" class="cg-draft-block" hidden>
@@ -80,7 +82,7 @@ function mountGuide() {
     </dialog>`;
   document.body.append(root);
   const $ = id => root.querySelector(`#${id}`);
-  const state = { catalog: null, ids: [], messages: [], nextSteps: [], loading: false, loaded: false, chatBusy: false, controller: null, failedBubble: null, attempt: null, receipt: null, savedText: '', opener: null, needsReview: false };
+  const state = { catalog: null, ids: [], interests: readIntent(), messages: [], nextSteps: [], loading: false, loaded: false, chatBusy: false, controller: null, failedBubble: null, attempt: null, receipt: null, savedText: '', opener: null, needsReview: false };
   const dialog = $('legacy-guide');
   const node = (tag, text, className) => { const item = document.createElement(tag); if (text !== undefined) item.textContent = text; if (className) item.className = className; return item; };
   const status = (id, text, error = false) => { const item = $(id); item.textContent = text; item.classList.toggle('cg-error', error); };
@@ -121,6 +123,24 @@ function mountGuide() {
     const trigger = event.target.closest?.('[data-open-guide]');
     if (trigger) { event.preventDefault(); openGuide(trigger.dataset.openGuide); }
   });
+  function noteInterest(id, kind) {
+    if (state.receipt) return;
+    const updated = recordIntent(state.interests, id, kind);
+    if (JSON.stringify(updated) === JSON.stringify(state.interests)) return;
+    state.interests = updated; saveIntent(updated); invalidateApproval();
+    if ($('cg-draft').value.trim()) { state.needsReview = true; $('cg-send').disabled = true; status('cg-brief-status', 'Service interests changed. Update your inquiry from the fields before sending.'); }
+    renderInterests();
+  }
+  function trackServiceClick(event) {
+    if (event.type === 'auxclick' && event.button !== 1) return;
+    const link = event.target.closest?.('a[href]'); if (!link) return;
+    try {
+      const url = new URL(link.href, location.href);
+      if (url.origin === location.origin && /^\/solutions\/?$/.test(url.pathname) && url.hash) noteInterest(decodeURIComponent(url.hash.slice(1)), 'read');
+    } catch { /* Not a catalog link. */ }
+  }
+  document.addEventListener('click', trackServiceClick);
+  document.addEventListener('auxclick', trackServiceClick);
 
   async function requestJSON(url, options = {}) {
     const controller = options.controller || new AbortController();
@@ -149,10 +169,11 @@ function mountGuide() {
       $('cg-tab-guide').hidden = !catalog.capabilities.chat;
       $('cg-share').hidden = !$('cg-draft').value.trim();
       if (catalog.capabilities.chat) $('cg-launcher').firstChild.textContent = 'Ask Legacy AI ';
+      if (!state.loadedInterests) { state.ids = state.interests.filter(item => item.selected && !item.dismissed).map(item => item.id).slice(0, MAX_SERVICES); state.loadedInterests = true; }
       state.ids = state.ids.filter(id => catalog.services.some(service => service.id === id));
       $('cg-inquiry-notice').textContent = catalog.consent?.inquiryText || 'The current inquiry notice is unavailable. Please reconnect before sending.';
       $('cg-marketing-notice').textContent = catalog.consent?.marketingText || 'Optional email updates are unavailable.';
-      $('cg-send').disabled = !catalog.capabilities.inquiries || !catalog.consent || !!state.receipt;
+      $('cg-send').disabled = !catalog.capabilities.inquiries || !catalog.consent || !!state.receipt || state.needsReview;
       $('cg-ask').disabled = state.chatBusy;
       status('cg-catalog-status', `${catalog.services.length} services from the Legacy AI catalog.`);
       renderComparison();
@@ -169,6 +190,20 @@ function mountGuide() {
     return link;
   }
   function invalidateApproval() { if (!state.receipt) { $('cg-confirm').checked = false; $('cg-marketing').checked = false; } }
+  function renderInterests() {
+    if (!state.catalog) return;
+    const interests = rankIntent(state.interests, state.catalog.services, state.ids);
+    $('cg-intent').hidden = !interests.length;
+    const list = $('cg-intent-list'); list.replaceChildren();
+    interests.forEach(service => {
+      const row = node('div', undefined, 'cg-interest-row'), description = node('div');
+      description.append(node('strong', service.name), node('p', service.reasons.join(' · '), 'cg-note'));
+      const remove = node('button', 'Remove', 'cg-link-button'); remove.type = 'button'; remove.disabled = !!state.receipt;
+      remove.setAttribute('aria-label', `Remove ${service.name} from discussion interests`);
+      remove.addEventListener('click', () => { state.ids = state.ids.filter(id => id !== service.id); noteInterest(service.id, 'dismiss'); renderComparison(); status('cg-selection-status', `${service.name} removed from the discussion interests.`); });
+      row.append(description, remove); list.append(row);
+    });
+  }
   function renderComparison() {
     if (!state.catalog) return;
     const selectors = $('cg-selectors'); selectors.replaceChildren();
@@ -179,8 +214,11 @@ function mountGuide() {
       state.catalog.services.forEach(service => { const option = node('option', service.name); option.value = service.id; option.disabled = state.ids.includes(service.id) && state.ids[index] !== service.id; select.append(option); });
       select.value = state.ids[index] || '';
       select.addEventListener('change', () => {
-        const next = [...state.ids]; next[index] = select.value;
-        state.ids = [...new Set(next.filter(Boolean))]; invalidateApproval(); renderComparison();
+        const previous = [...state.ids], next = [...state.ids]; next[index] = select.value;
+        state.ids = [...new Set(next.filter(Boolean))];
+        previous.filter(id => !state.ids.includes(id)).forEach(id => noteInterest(id, 'deselect'));
+        state.ids.filter(id => !previous.includes(id)).forEach(id => noteInterest(id, 'select'));
+        invalidateApproval(); renderComparison();
         const nextFocus = $(`cg-service-${Math.min(index, state.ids.length)}`); nextFocus?.focus();
         status('cg-selection-status', `${state.ids.length} ${state.ids.length === 1 ? 'service' : 'services'} in your shortlist.`);
       });
@@ -196,11 +234,12 @@ function mountGuide() {
       article.append(node('p', service.tag, 'cg-service-tag'), node('h4', service.name), node('p', service.body), serviceLink(service));
       comparison.append(article);
     });
+    renderInterests();
   }
   function addService(id) {
     if (state.ids.includes(id)) { switchTab('compare'); return; }
     if (state.ids.length >= MAX_SERVICES) { switchTab('compare'); status('cg-selection-status', 'Your shortlist has three services. Replace one above to add another.', true); return; }
-    state.ids.push(id); invalidateApproval(); renderComparison(); switchTab('compare');
+    state.ids.push(id); noteInterest(id, 'select'); invalidateApproval(); renderComparison(); switchTab('compare');
     status('cg-selection-status', 'Added to your shortlist.');
   }
 
@@ -211,6 +250,7 @@ function mountGuide() {
   function renderSuggestions(response) {
     const container = $('cg-suggestions'); container.replaceChildren();
     response.serviceIds.forEach(id => {
+      noteInterest(id, 'recommend');
       const service = state.catalog.services.find(item => item.id === id);
       const row = node('div', undefined, 'cg-suggestion'); const add = node('button', `Compare ${service.name}`, 'cg-secondary'); add.type = 'button';
       add.addEventListener('click', () => addService(id)); row.append(add, serviceLink(service)); container.append(row);
@@ -246,7 +286,9 @@ function mountGuide() {
     try {
       const fields = Object.fromEntries(new FormData(event.currentTarget));
       const selected = state.catalog ? selectedServices(state.ids, state.catalog.services) : [];
-      $('cg-draft').value = composeBrief(fields, selected); $('cg-draft-block').hidden = false;
+      const interests = state.catalog ? rankIntent(state.interests, state.catalog.services, state.ids) : [];
+      $('cg-draft').value = composeBrief(fields, selected, interests); $('cg-draft-block').hidden = false;
+      state.needsReview = false; $('cg-send').disabled = !state.catalog?.capabilities.inquiries || !state.catalog?.consent || !!state.receipt;
       $('cg-share-company').value = fields.company || $('cg-share-company').value; $('cg-build').textContent = 'Update inquiry from fields'; $('cg-rebuild-note').hidden = false;
       $('cg-share').hidden = false; $('cg-share').open = true;
       const contact = readLeadContact(); for (const key of ['name', 'email', 'company']) { const input = $(key === 'company' ? 'cg-share-company' : `cg-${key}`); if (!input.value) input.value = contact[key]; }
@@ -261,7 +303,7 @@ function mountGuide() {
   }
   $('cg-share').addEventListener('toggle', () => { if ($('cg-share').open && !$('cg-draft').value.trim()) status('cg-save-status', 'Build and review your brief above before sending.', true); });
   $('cg-inquiry-form').addEventListener('submit', async event => {
-    event.preventDefault(); if (state.receipt || $('cg-send').disabled) return;
+    event.preventDefault(); if (state.receipt || state.needsReview || $('cg-send').disabled) return;
     let payload;
     try {
       payload = buildInquiry({ name: $('cg-name').value, email: $('cg-email').value, company: $('cg-share-company').value, message: $('cg-draft').value, confirmed: $('cg-confirm').checked, marketingOptIn: $('cg-marketing').checked }, state.ids, state.catalog?.services || [], state.catalog?.consent);

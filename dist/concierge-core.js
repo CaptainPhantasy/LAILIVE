@@ -29,9 +29,11 @@ export function selectedServices(ids, services) {
 
 const clean = value => typeof value === 'string' ? value.trim() : '';
 
-export function composeBrief(fields, services) {
+export function composeBrief(fields, services, interests = []) {
   const challenge = clean(fields.challenge);
   if (!challenge) throw new Error('Describe the task you would like to make easier.');
+  const discussion = new Map(services.map(service => [service.id, { ...service, reasons: ['Selected by the visitor for comparison'] }]));
+  interests.forEach(item => { if (!discussion.has(item.id)) discussion.set(item.id, item); });
   const lines = [
     'LEGACY AI — MY INQUIRY FOR DOUGLAS',
     'The work I would like to discuss. This is not agreed scope or a quote.',
@@ -42,8 +44,9 @@ export function composeBrief(fields, services) {
     '', 'The result I want', clean(fields.goal) || 'Not supplied',
     '', 'Tools or process I use now', clean(fields.tools) || 'Not supplied',
     '', 'Timing', clean(fields.timing) || 'Not supplied',
-    '', 'Services I want to discuss',
-    ...(services.length ? services.flatMap(service => [`- ${service.name}`, `  /solutions/#${service.id}`]) : ['None selected yet']),
+    '', 'Services worth discussing',
+    'Interest to review together, not an order or agreed scope.',
+    ...(discussion.size ? [...discussion.values()].flatMap(service => [`- ${service.name}`, `  ${service.reasons.join('; ')}.`, `  /solutions/#${service.id}`]) : ['No specific service interests recorded yet.']),
     '', 'Questions for the conversation', clean(fields.questions) || 'None added yet'
   ];
   if (clean(fields.suggestions)) lines.push('', 'Suggested next steps for review (not agreed work)', clean(fields.suggestions));
