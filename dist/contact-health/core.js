@@ -89,7 +89,9 @@ export function analyze(data, mapping) {
     if (!contact.email && !contact.phone) add(row, 'missing_contact', 'No email or phone in the selected contact columns.');
     if (contact.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact.email)) add(row, 'email_format', 'Email format needs review. This checker cannot confirm delivery.', [data.headers[mapping.email]]);
     const phone = phoneKey(contact.phone), digits = phone.split('x')[0];
-    if (contact.phone && (digits.length < 7 || digits.length > 15 || /[a-wyz]/i.test(contact.phone.replace(/ext\.?/ig, '')))) add(row, 'phone_format', 'Phone format needs review. Include an area or country code where needed.', [data.headers[mapping.phone]]);
+    const extensionMatch = contact.phone.match(/\s*(?:ext\.?|x|#)\s*(\d+)\s*$/i);
+    const base = extensionMatch ? contact.phone.slice(0, extensionMatch.index) : contact.phone;
+    if (contact.phone && (digits.length < 7 || digits.length > 15 || /[a-z]/i.test(base.replace(/ext\.?/ig, '')))) add(row, 'phone_format', 'Phone format needs review. Include an area or country code where needed.', [data.headers[mapping.phone]]);
     const key = JSON.stringify(row.values);
     if (exact.has(key)) { duplicates.add(row.id); add(row, 'exact_duplicate', `Every original field exactly matches record ${exact.get(key)}.`, [], [exact.get(key)]); }
     else exact.set(key, row.id);
@@ -105,8 +107,9 @@ export function analyze(data, mapping) {
       const values = new Set(rows.map(row => index === mapping.phone ? phoneKey(row.values[index]) : normalized(row.values[index])).filter(Boolean));
       return values.size > 1;
     });
-    for (const row of rows) {
-      const related = rows.filter(r => r.id !== row.id).slice(0, 20).map(r => r.id);
+    const ids = rows.map(r => r.id);
+    for (const [index, row] of rows.entries()) {
+      const related = (index >= 20 ? ids.slice(0, 20) : ids.slice(0, index).concat(ids.slice(index + 1, 21)));
       add(row, conflicts.length ? 'possible_conflict' : 'shared_contact', conflicts.length ? `Shared ${kind}, different non-empty details. Review the records separately; this is not proof they are the same person.` : `Shared ${kind} with another non-identical record. This may be a shared household or business contact.`, conflicts, related, rows.length);
     }
   }

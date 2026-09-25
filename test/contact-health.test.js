@@ -19,3 +19,16 @@ test('export preserves columns and quotes while neutralizing spreadsheet formula
  assert.match(output,/"'=HYPERLINK/);assert.match(output,/"'\+1555/);
  const parsed=parseCSV(output);assert.equal(parsed.rows[0].values[2],'a,b\nline');
 });
+test('a stray x fails the phone check; a trailing extension passes',()=>{
+ const data=parseCSV('Name,Phone\nAnn,xxx-555-123-4567\nBen,555-123-4567 x12\nCy,555-987-6543\nDi,555-987-6543');
+ const report=analyze(data,guessMapping(data.headers));
+ const flagged=id=>report.issues.some(i=>i.record===id&&i.code==='phone_format');
+ assert(flagged(2));assert(!flagged(3));assert(!flagged(4));assert(!flagged(5));
+});
+test('shared-contact groups list related records without rescanning the group per row',()=>{
+ const data=parseCSV('Name,Email\nP1,p@x.test\nP2,p@x.test\nP3,p@x.test\nP4,q@x.test');
+ const report=analyze(data,guessMapping(data.headers));
+ const grouped=report.issues.filter(i=>i.related.length);
+ assert.deepEqual(grouped.map(i=>[i.record,i.related]),[[2,[3,4]],[3,[2,4]],[4,[2,3]]]);
+});
+

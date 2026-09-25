@@ -1,16 +1,16 @@
 import {LIMITS,parseCSV,guessMapping,analyze,contactFor,encodeCSV,draftRows,issueRows} from './core.js';
 const $=id=>document.getElementById(id);
-let data=null,report=null,mapping=null,page=0,excluded=new Set();
+let data=null,report=null,mapping=null,page=0,excluded=new Set(),fileToken=0;
 const pageSize=25;
 const node=(tag,text,cls)=>{const el=document.createElement(tag);if(text!==undefined)el.textContent=text;if(cls)el.className=cls;return el;};
 function error(message=''){$('error').textContent=message;$('error').hidden=!message;}
-function invalidate(){data=null;report=null;mapping=null;page=0;excluded.clear();$('mapping-panel').hidden=true;$('results').hidden=true;$('status').textContent='';error();}
+function invalidate(){fileToken++;data=null;report=null;mapping=null;page=0;excluded.clear();$('mapping-panel').hidden=true;$('results').hidden=true;$('status').textContent='';error();}
 function run(action){try{error();action();}catch(e){error(e.message);}}
 $('csv-text').addEventListener('input',invalidate);
 $('delimiter').addEventListener('change',invalidate);
 $('csv-file').addEventListener('change',async()=>{
- const file=$('csv-file').files[0];if(!file)return;invalidate();
- try{if(file.size>LIMITS.bytes)throw new Error('Choose a CSV file no larger than 2 MB.');$('csv-text').value=await file.text();$('status').textContent='File loaded on this device. Read the columns to continue.';}catch(e){error(e.message);}
+ const file=$('csv-file').files[0];if(!file)return;invalidate();const token=fileToken;
+ try{if(file.size>LIMITS.bytes)throw new Error('Choose a CSV file no larger than 2 MB.');const text=await file.text();if(token!==fileToken||$('csv-file').files[0]!==file)return;$('csv-text').value=text;$('status').textContent='File loaded on this device. Read the columns to continue.';}catch(e){if(token!==fileToken)return;error(e.message);}
 });
 $('clear-all').addEventListener('click',()=>{invalidate();$('csv-file').value='';$('csv-text').value='';$('status').textContent='The page has been cleared.';$('csv-text').focus();});
 $('read-csv').addEventListener('click',()=>run(()=>{
@@ -45,5 +45,5 @@ function renderRecords(){
 $('review-filter').addEventListener('change',()=>{page=0;renderRecords();});$('previous').addEventListener('click',()=>{page--;renderRecords();});$('next').addEventListener('click',()=>{page++;renderRecords();});
 ['remove-duplicates','trim-spaces'].forEach(id=>$(id).addEventListener('change',updateDraft));
 function download(rows,name){const url=URL.createObjectURL(new Blob([encodeCSV(rows)],{type:'text/csv;charset=utf-8'}));const link=node('a');link.href=url;link.download=name;document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);$('status').textContent='Download prepared. Nothing was uploaded or imported.';}
-$('download-draft').addEventListener('click',()=>run(()=>{if(!report)throw new Error('Check your list first.');download([data.headers,...draftRows(data,report,{excluded,removeDuplicates:$('remove-duplicates').checked,trim:$('trim-spaces').checked})],'legacy-ai-contact-draft.csv');}));
+$('download-draft').addEventListener('click',()=>run(()=>{if(!report)throw new Error('Check your list first.');const trim=$('trim-spaces').checked;download([trim?data.headers.map(h=>h.trim()):data.headers,...draftRows(data,report,{excluded,removeDuplicates:$('remove-duplicates').checked,trim})],'legacy-ai-contact-draft.csv');}));
 $('download-issues').addEventListener('click',()=>run(()=>{if(!report)throw new Error('Check your list first.');download(issueRows(data,report),'legacy-ai-contact-issues.csv');}));
