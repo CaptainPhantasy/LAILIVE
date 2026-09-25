@@ -1,0 +1,15 @@
+{
+  "name": "legacy-ai-solutions",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build-vercel.mjs",
+    "build:sites": "node build.mjs",
+    "dev": "node preview.mjs",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "ai": "7.0.38",
+    "zod": "4.2.1"
+  }
+}
