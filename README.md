@@ -38,3 +38,9 @@ The downloadable field guide is `dist/catalog.pdf` (23 pages, 5.7 MB). Its porta
 `/contact-health/` checks visitor-supplied CSV data entirely in the browser. It flags missing details, exact duplicate rows and shared-contact conflicts; visitors review exclusions and download a draft or issues report. It does not upload contact data or infer permission to contact anyone. Run its focused checks with `node --test test/contact-health.test.js`.
 
 The “Compare & plan” panel compares up to three actual catalog services and creates an editable, downloadable project brief from visitor-entered details. Both tools work locally. Chat and CRM submission controls remain hidden until their real backend connection is completed; there are no canned AI responses or pretend receipts.
+
+## Private CRM and assistant
+
+`/owner/` uses managed Neon Google sign-in. Every owner API independently verifies the signed session and permits only the explicitly named, verified owner email. Visitor contacts, source evidence, inquiry submissions, separate consent events, and unsent reply drafts use PostgreSQL. The PA reads actual records; public chat has only the approved service catalog. Contact export is CSV (up to the 10,000 most recent records). Identifiers are visitor-stated; names/IP addresses never automatically merge people.
+
+Preview storage is the dedicated `legacy-ai-site-crm` database. Apply migrations in filename order through the authenticated database console. Database credentials are Vercel Preview environment variables; none are committed. The Auth URL is public configuration. The runtime uses the existing Vercel AI Gateway and the configured/default model with bounded requests and no automatic retries. `node --test test/concierge-backend.test.js` verifies real SQL transactions and cryptographically signed owner-token boundaries. A deployment is needed to verify the actual provider login/model calls.
