@@ -36,3 +36,5 @@ The downloadable field guide is `dist/catalog.pdf` (23 pages, 5.7 MB). Its porta
 ## Working service tools
 
 `/contact-health/` checks visitor-supplied CSV data entirely in the browser. It flags missing details, exact duplicate rows and shared-contact conflicts; visitors review exclusions and download a draft or issues report. It does not upload contact data or infer permission to contact anyone. Run its focused checks with `node --test test/contact-health.test.js`.
+
+The “Compare & plan” panel compares up to three actual catalog services and creates an editable, downloadable project brief from visitor-entered details. Both tools work locally. Chat and CRM submission controls remain hidden until their real backend connection is completed; there are no canned AI responses or pretend receipts.

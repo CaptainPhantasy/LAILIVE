@@ -1,0 +1,333 @@
+{
+  "version": "catalog-2026-09-25",
+  "services": [
+    {
+      "name": "The Silent Closer",
+      "tag": "Web \u00b7 24/7",
+      "id": "the-silent-closer",
+      "body": "A friendly conversation on your website answers questions about prices, hours and services, then books the appointment. It works around the clock, even at two in the morning."
+    },
+    {
+      "name": "The Receptionist Who Never Calls In",
+      "tag": "Voice \u00b7 Bilingual",
+      "id": "the-receptionist-who-never-calls-in",
+      "body": "A real-sounding voice answers calls, handles questions and books appointments directly into your calendar. Spanish-language conversations help customers who might otherwise hang up find their way to a booking."
+    },
+    {
+      "name": "The Live Booking Calendar",
+      "tag": "Scheduling",
+      "id": "the-live-booking-calendar",
+      "body": "Customers choose a time on your website without phone tag. The calendar checks your actual availability, so it only offers open slots and avoids double-bookings."
+    },
+    {
+      "name": "The Daily Hunter",
+      "tag": "Outbound \u00b7 Nightly",
+      "id": "the-daily-hunter",
+      "body": "Automated local prospecting looks for people in your area who need what you sell. It runs daily, bringing opportunities to your business without a morning of dialing."
+    },
+    {
+      "name": "The Lead Catcher",
+      "tag": "Lead Capture",
+      "id": "the-lead-catcher",
+      "body": "Capture who a visitor is and what they wanted, even when they leave before finishing the form. Follow up on the interest that might otherwise disappear."
+    },
+    {
+      "name": "The Missed-Call Recovery",
+      "tag": "SMS \u00b7 Auto",
+      "id": "the-missed-call-recovery",
+      "body": "When you cannot answer, the caller gets a friendly text back instantly. Keep the conversation open and give missed calls another path to becoming booked work."
+    },
+    {
+      "name": "The Follow-Up Machine",
+      "tag": "Nurture",
+      "id": "the-follow-up-machine",
+      "body": "Text each new lead, nudge outstanding quotes and ask for reviews at the right moment. Follow-up keeps moving without becoming another task on your desk."
+    },
+    {
+      "name": "The Traffic Tattletale",
+      "tag": "Analytics",
+      "id": "the-traffic-tattletale",
+      "body": "See where customers came from, what they clicked and what prompted their call. Use that view to understand which advertising is earning its place."
+    },
+    {
+      "name": "The Review Harvester",
+      "tag": "Reviews \u00b7 Auto",
+      "id": "the-review-harvester",
+      "body": "Send a gentle review request after a good experience, on the platform that matters to your business. Customer concerns go to you first so you can address the problem."
+    },
+    {
+      "name": "The Report Writer",
+      "tag": "Field \u2192 Report",
+      "id": "the-report-writer",
+      "body": "A technician captures photos, measurements and findings by speaking into a phone at the job site. That information becomes a branded report delivered to the customer, before the trip back is over."
+    },
+    {
+      "name": "The Talk-To-Type Field Tool",
+      "tag": "Voice Entry",
+      "id": "the-talk-to-type-field-tool",
+      "body": "Crews speak instead of typing on small screens. The tool records conditions, materials and measurements so field notes move faster and the important details get written down."
+    },
+    {
+      "name": "The Technician Dashboard",
+      "tag": "Workflow",
+      "id": "the-technician-dashboard",
+      "body": "Guide every technician through the same sequence: en route, on site, working and done. Required steps and before photos stay part of the job, rather than something someone remembers later."
+    },
+    {
+      "name": "The Digital Sign-Off",
+      "tag": "Paperless",
+      "id": "the-digital-sign-off",
+      "body": "The customer signs on the phone. Approval is recorded and filed in seconds, without a paper form to chase or a promise to send it later."
+    },
+    {
+      "name": "On-Site Card Processing",
+      "tag": "Payments",
+      "id": "on-site-card-processing",
+      "body": "Take a card payment at the customer's property and send a branded receipt straight to their inbox. Finish the payment while you are still on site."
+    },
+    {
+      "name": "The Upsell Menu",
+      "tag": "Revenue",
+      "id": "the-upsell-menu",
+      "body": "Show the standard service alongside optional extras on the same screen. Customers can add the work they want, giving each job room to grow without a hard sell."
+    },
+    {
+      "name": "The Invoice Chaser",
+      "tag": "Collections",
+      "id": "the-invoice-chaser",
+      "body": "Unpaid invoices receive polite, persistent follow-up until they are paid. The reminders keep moving without relying on your memory or putting you in the chasing role."
+    },
+    {
+      "name": "Books That Balance Themselves",
+      "tag": "Accounting",
+      "id": "books-that-balance-themselves",
+      "body": "Payments, receipts and expenses are sorted and categorized for your accountant. Keep the records ready throughout the year so April does not begin with a scramble."
+    },
+    {
+      "name": "The Dispatcher",
+      "tag": "Dispatch",
+      "id": "the-dispatcher",
+      "body": "Match each call with the technician who is nearby, available and equipped with the right truck. Coordinate the job without a whiteboard, group text or another dispatch call to you."
+    },
+    {
+      "name": "A Real Custom Website",
+      "tag": "Website",
+      "id": "a-real-custom-website",
+      "body": "A custom site built for your trade, your town and your customers. Designed from scratch and fast on phones, it gives your business a polished presence that earns its keep."
+    },
+    {
+      "name": "High-Converting Landing Pages",
+      "tag": "Conversion",
+      "id": "high-converting-landing-pages",
+      "body": "A focused page turns a campaign click into a phone call. Built in a day for a seasonal promotion or an ad, then tuned to improve the response."
+    },
+    {
+      "name": "Website Rescue",
+      "tag": "Rescue",
+      "id": "website-rescue",
+      "body": "We take over a slow or broken website, fix the problems and make it fast. You keep your domain and get a site you can feel comfortable sending customers to."
+    },
+    {
+      "name": "The Customer Portal",
+      "tag": "Deliverables",
+      "id": "the-customer-portal",
+      "body": "Give customers clean, secure links to their reports, videos and invoices. A clear delivery experience makes finding the finished work feel as straightforward as tracking a package."
+    },
+    {
+      "name": "A Page For Every Neighborhood",
+      "tag": "SEO \u00b7 Programmatic",
+      "id": "a-page-for-every-neighborhood",
+      "body": "Create a page for every city, town and ZIP code you serve, written with local landmarks and local language. This approach is already in production for a statewide Indiana service business."
+    },
+    {
+      "name": "Top Of Google For Your Town",
+      "tag": "SEO",
+      "id": "top-of-google-for-your-town",
+      "body": "Improve your visibility for your trade in your area with useful content and sound site structure. Help neighbors find your business when they search for the service you provide."
+    },
+    {
+      "name": "Get Recommended By ChatGPT",
+      "tag": "GEO \u00b7 AI Answers",
+      "id": "get-recommended-by-chatgpt",
+      "body": "Build your business's presence in answers from ChatGPT and other AI assistants. When someone asks for a local recommendation, your business is prepared to be part of the conversation."
+    },
+    {
+      "name": "The Map Pack",
+      "tag": "Local \u00b7 Maps",
+      "id": "the-map-pack",
+      "body": "Manage your Google Business profile with current posts, photos and reviews, supporting visibility in the top three Google Maps results for nearby searches."
+    },
+    {
+      "name": "The Review Ladder",
+      "tag": "Reviews",
+      "id": "the-review-ladder",
+      "body": "Automatically ask happy customers for a review at a moment when the experience is fresh. Build the reputation that supports stronger, lasting visibility in local search."
+    },
+    {
+      "name": "Bad-Review Interception",
+      "tag": "Reviews \u00b7 Triage",
+      "id": "bad-review-interception",
+      "body": "Route unhappy customers to you first so you can resolve their concerns before they become a public review. Give a difficult experience a better ending."
+    },
+    {
+      "name": "Review Response Handling",
+      "tag": "Engagement",
+      "id": "review-response-handling",
+      "body": "Every review, positive or negative, gets a thoughtful response in your brand's voice within the day. Customers see a business that is attentive without you logging in to reply."
+    },
+    {
+      "name": "Social Proof Everywhere",
+      "tag": "Social Proof",
+      "id": "social-proof-everywhere",
+      "body": "Put your strongest reviews to work on your website, landing pages, ads and follow-up emails. Let customers hear from the people who have already chosen you."
+    },
+    {
+      "name": "The Writer Who Never Sleeps",
+      "tag": "Content",
+      "id": "the-writer-who-never-sleeps",
+      "body": "Articles, blog posts, service pages and newsletters, all in your voice. The existing client workflow produces more than 800 pieces a year with about an hour a week of the client's attention."
+    },
+    {
+      "name": "The Social Media Sidekick",
+      "tag": "Social",
+      "id": "the-social-media-sidekick",
+      "body": "Keep posts on schedule, the feed active and comments answered. Stay familiar to your audience without opening Instagram while you are on a job."
+    },
+    {
+      "name": "Long-To-Short Video",
+      "tag": "Video \u00b7 Repurpose",
+      "id": "long-to-short-video",
+      "body": "Turn one job-site video into twenty short clips for TikTok, Reels and YouTube Shorts. Captions and hooks are included, giving one filming session a month of posts."
+    },
+    {
+      "name": "Blog From A Voice Memo",
+      "tag": "Voice-First",
+      "id": "blog-from-a-voice-memo",
+      "body": "A ten-minute voice memo about a job becomes a blog post, an email and five social posts. Capture what you know from the truck without sitting down at a keyboard."
+    },
+    {
+      "name": "Done-For-You Ad Campaigns",
+      "tag": "Ads",
+      "id": "done-for-you-ad-campaigns",
+      "body": "Campaigns for Google, Facebook, Instagram and local directories. We handle creative, copy, targeting and ongoing tuning so you can focus on answering the inquiries."
+    },
+    {
+      "name": "Email & Text Campaigns",
+      "tag": "Email \u00b7 SMS",
+      "id": "email-text-campaigns",
+      "body": "Newsletters, promotions, seasonal reminders and messages to win back quiet customers. Written in your voice and sent when they are relevant to the people on your list."
+    },
+    {
+      "name": "Seasonal Automation",
+      "tag": "Automation",
+      "id": "seasonal-automation",
+      "body": "Schedule spring tune-ups, pre-winter check-ups, back-to-school specials and other recurring reminders. The right message returns each year without another calendar task."
+    },
+    {
+      "name": "Sales Outreach On Autopilot",
+      "tag": "Prospecting",
+      "id": "sales-outreach-on-autopilot",
+      "body": "Find and research prospects, prepare a personal-sounding message and send it. Interesting replies come to you, keeping outreach moving while you do the work."
+    },
+    {
+      "name": "The Quote-From-Photo Tool",
+      "tag": "Quoting",
+      "id": "the-quote-from-photo-tool",
+      "body": "A customer texts a photo of a dented fender, leaky pipe or cracked driveway and receives a ballpark quote in about sixty seconds. Make the next step toward booking simple."
+    },
+    {
+      "name": "The Q&A Specialist",
+      "tag": "Support",
+      "id": "the-q-a-specialist",
+      "body": "Answer the questions customers ask most often, all day, in your voice. Unusual questions are escalated to you so your time goes to the conversations that need you."
+    },
+    {
+      "name": "Outbound Reminder Calls",
+      "tag": "Outbound",
+      "id": "outbound-reminder-calls",
+      "body": "Appointment confirmations, follow-ups and review requests delivered in a real-sounding voice. Complete the calls you rarely have time to make yourself."
+    },
+    {
+      "name": "Multilingual Customer Capture",
+      "tag": "Bilingual",
+      "id": "multilingual-customer-capture",
+      "body": "Bilingual conversations and booking help Spanish-speaking customers get past the voicemail barrier. A full translation is handed to you for the next step."
+    },
+    {
+      "name": "Locked Doors On Your Website",
+      "tag": "Security",
+      "id": "locked-doors-on-your-website",
+      "body": "Protect the front door of your website by blocking attacks and unwanted bots. The setup addresses eighty common ways attackers get in, reducing avoidable exposure."
+    },
+    {
+      "name": "Backups That Actually Work",
+      "tag": "Backups",
+      "id": "backups-that-actually-work",
+      "body": "Customer information, job records, photos and reports are backed up automatically, encrypted and recoverable. A failed laptop or hard drive does not have to take the records with it."
+    },
+    {
+      "name": "Lawyer-Proof Setup",
+      "tag": "Compliance",
+      "id": "lawyer-proof-setup",
+      "body": "Put privacy policies, data handling rules and deletion rights into your setup. Organize how customer information is handled and reduce the gaps that can turn into expensive problems."
+    },
+    {
+      "name": "Disaster Recovery Plan",
+      "tag": "Recovery",
+      "id": "disaster-recovery-plan",
+      "body": "Give each system a written recovery plan. When a fire, flood or other disruption happens, there is a clear route back to work rather than a plan to invent under pressure."
+    },
+    {
+      "name": "The Owner's Dashboard",
+      "tag": "Dashboard",
+      "id": "the-owner-s-dashboard",
+      "body": "Bring leads, jobs, revenue, top services and customer sources onto one clear screen. See the numbers you need without digging through an analytics tool."
+    },
+    {
+      "name": "Where The Money Came From",
+      "tag": "Attribution",
+      "id": "where-the-money-came-from",
+      "body": "Connect advertising spend to booked jobs and revenue. Understand which marketing activity produces work so you can make informed decisions about the next dollar."
+    },
+    {
+      "name": "Competitor Watch",
+      "tag": "Intelligence",
+      "id": "competitor-watch",
+      "body": "Follow competitors' search rankings, prices, ads and reviews as they change. Keep the information current so changes in your market do not arrive as a surprise."
+    },
+    {
+      "name": "Sales Alerts On Your Phone",
+      "tag": "Alerts",
+      "id": "sales-alerts-on-your-phone",
+      "body": "Get a phone alert when a real prospect arrives on your site or a payment reaches your account. Stay in the loop without living in your inbox."
+    },
+    {
+      "name": "Subscription Bloat Audit",
+      "tag": "Audit",
+      "id": "subscription-bloat-audit",
+      "body": "Review recurring account charges and flag services you no longer need. Most clients find savings on the first pass that cover the audit fee."
+    },
+    {
+      "name": "Make Your Tools Talk",
+      "tag": "Integration",
+      "id": "make-your-tools-talk",
+      "body": "Connect your calendar, email, accounting, field app and customer list. Enter a customer once and move the details between the systems automatically."
+    },
+    {
+      "name": "Move Off The System You Hate",
+      "tag": "Migration",
+      "id": "move-off-the-system-you-hate",
+      "body": "Move customers, history and files out of the software that no longer fits. Settle into a system built around the way your business actually works."
+    },
+    {
+      "name": "Customer List That Actually Works",
+      "tag": "CRM",
+      "id": "customer-list-that-actually-works",
+      "body": "Set up your customer list properly and load the records you already have. Replace fragile spreadsheets with an organized system your business can use."
+    }
+  ],
+  "capabilities": {
+    "chat": false,
+    "inquiries": false
+  }
+}
