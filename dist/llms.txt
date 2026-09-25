@@ -1,0 +1,21 @@
+# Legacy AI
+
+> Legacy AI builds and runs pre-built AI systems for owner-operated businesses across Indiana — phone answering, lead follow-up, scheduling, reviews, reporting and customer records. 54 productized solutions, already in production. One call. One person. One bill.
+
+Legacy AI is led by founder Douglas Talley and based in Brown County, Indiana. Everything offered is already built and already in production for businesses such as an auto body shop in Bloomington, a plumber's office in Nashville, a chiropractor in Columbus, and a property inspection company covering every county in Indiana. The model is a menu: read the solutions, pick what hurts, and agree on scope, price and timeline in writing before work begins. Service trades, advertising exchanges and combined arrangements are welcome.
+
+## Pages
+- [Thesis — what Legacy AI is](https://legacyai.space/): The promise, the proof points and the working philosophy.
+- [All 54 solutions](https://legacyai.space/solutions/): The full menu in five pillars — Fill The Calendar, Run The Business, Look Bigger Than You Are, Be Everywhere Without Working More, Sleep At Night.
+- [Intake](https://legacyai.space/intake/): Pick your pain points and see which solutions fix them.
+- [The Deal](https://legacyai.space/deal/): Five steps from a 30-minute call to launch and ongoing improvement, plus the six industries already served.
+- [The Board](https://legacyai.space/board/): Five AI advisor perspectives examine one business decision — recommendation, dissent, risks, next steps.
+- [Contact-list health check](https://legacyai.space/contact-health/): A browser tool that reviews a customer CSV for missing details, duplicate rows and conflicting contact information.
+
+## Contact
+- Email: douglas@legacyai.space
+- Site: https://legacyai.space
+- Field guide (PDF): https://legacyai.space/catalog.pdf
+
+## Optional
+- [Full content for AI systems](https://legacyai.space/llms-full.txt): Every solution with its description, the industries served and the five working steps.
