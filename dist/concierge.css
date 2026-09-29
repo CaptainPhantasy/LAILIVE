@@ -11,3 +11,13 @@
 /* Leo (ElevenLabs widget) sits bottom-left; keep both floating controls clear of each other and of the page end. */
 body{padding-bottom:96px}
 @media(max-width:620px){.cg-launcher{bottom:calc(max(14px,env(safe-area-inset-bottom)) + 84px)}body{padding-bottom:170px}}
+/* Phones: small corner controls that stay clear of the page content. */
+.leo-orb{display:none}
+@media(max-width:620px){
+ body{padding-bottom:84px}
+html body .cg-launcher{bottom:max(16px,env(safe-area-inset-bottom));right:16px;width:52px;height:52px;min-height:0;padding:0;border-radius:50%;font-size:0;line-height:0;overflow:hidden;color:transparent;gap:0;justify-content:center}
+ html body .cg-launcher span{font-size:22px;line-height:1;color:#f7f5ef}
+ elevenlabs-convai:not(.leo-open){visibility:hidden;pointer-events:none}
+ .leo-orb{display:block;position:fixed;left:16px;bottom:max(16px,env(safe-area-inset-bottom));z-index:91;width:52px;height:52px;padding:0;border-radius:50%;border:2px solid #fff;background:#1d2b24 url('https://storage.googleapis.com/eleven-public-cdn/convai/agent_9301ka019xfsevkr3vhkks1wckvz/avatar.jpg') center/cover;box-shadow:0 4px 14px #18272155;cursor:pointer}
+ .leo-orb[hidden]{display:none}
+}
