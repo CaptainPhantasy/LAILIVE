@@ -61,7 +61,7 @@ Legacy AI is led by founder Douglas Talley and based in Brown County, Indiana. E
 
 ## How engagements work
 1. You tell us what's broken — describe the pain points on a 30-minute call. No pitch.
-2. We agree on the plan — scope, price and timeline in writing before work begins. Most projects begin with a deposit; for service trades, advertising exchanges or combined arrangements, the value and commitments are agreed up front.
+2. We agree on the plan — scope, price and timeline in writing before work begins. Custom websites start around $3,500 and the client owns the site after handoff; ongoing services and management are quoted separately. Most projects begin with a deposit; for service trades, advertising exchanges or combined arrangements, the value and commitments are agreed up front.
 3. We build. You see it working — configuration, customization and testing, then a walkthrough with your branding and workflow. One session.
 4. We go live together — launch and put it to work. Payments follow the agreed schedule, with milestones for larger projects. Day one.
 5. We keep making it better — monthly reports, quarterly reviews, ongoing improvements.
