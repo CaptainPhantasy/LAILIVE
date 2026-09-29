@@ -50,6 +50,7 @@ Legacy AI is led by founder Douglas Talley and based in Brown County, Indiana. E
 
 ## Contact
 - Email: douglas@legacyai.space
+- Phone: (812) 302-2525
 - Site: ${site}
 - Field guide (PDF): ${site}/catalog.pdf
 
@@ -95,6 +96,7 @@ ${catalog.services.map(s => `- ${s.name} (${s.tag}): ${s.body}`).join('\n')}
 
 ## Contact
 - Email: douglas@legacyai.space
+- Phone: (812) 302-2525
 - Site: ${site}
 - Field guide (PDF): ${site}/catalog.pdf
 `;

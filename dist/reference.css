@@ -153,3 +153,6 @@ footer{padding:48px 6%}footer a,footer p{font-size:.875rem}footer>.container{gri
 .data-row .label a{color:inherit;text-decoration:underline;text-decoration-thickness:1px}
 .work{border-top:1px solid rgba(0,0,0,.08)}.work-intro{max-width:640px;margin:18px 0 28px}.work .industry-card a{text-decoration:underline;font-weight:600}
 @media(min-width:1000px){.work .industry-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.header-call{margin-left:28px;padding:8px 14px;border:1px solid currentColor;font:600 14px/1.4 var(--sans);text-decoration:none;white-space:nowrap}.header-call:hover{background:var(--ink,#193b2d);color:#f7f5ef}
+.hero-call{font-size:.9rem;margin:16px 0 0}.hero-call a{font-weight:600;text-decoration:underline;white-space:nowrap}
+@media(max-width:720px){.header-call{margin-left:0}}
