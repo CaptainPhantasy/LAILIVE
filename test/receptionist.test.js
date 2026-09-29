@@ -50,9 +50,16 @@ test('the greeting turn is allowed with no conversation yet', () => {
 
 test('invented times are dropped and a hold needs a name and callback number', () => {
   const input = receptionistInput.parse(JSON.parse(body()));
-  assert.deepEqual(groundTurn(turn({ booking: { slotId: '20261231T2300', status: 'held' } }), input).booking, { slotId: null, status: 'none' });
-  assert.equal(groundTurn(turn({ booking: { slotId: '20261005T0900', status: 'held' } }), input).booking.status, 'offered');
-  assert.equal(groundTurn(turn({ booking: { slotId: '20261005T0900', status: 'held' }, caller: { name: 'Ann', callback: '555-0100', reason: 'x' } }), input).booking.status, 'held');
+  const invented = groundTurn(turn({ reply: 'Your Friday appointment is confirmed and the text is on its way.', booking: { slotId: '20261231T2300', status: 'held' } }), input);
+  assert.deepEqual(invented.booking, { slotId: null, status: 'none' });
+  assert.doesNotMatch(invented.reply, /Friday|confirmed|text is on its way/i);
+  const missingDetails = groundTurn(turn({ reply: 'You are booked.', booking: { slotId: '20261005T0900', status: 'held' } }), input);
+  assert.equal(missingDetails.booking.status, 'offered');
+  assert.match(missingDetails.reply, /your name and callback number/i);
+  const held = groundTurn(turn({ reply: 'Your confirmation has been sent.', booking: { slotId: '20261005T0900', status: 'held' }, caller: { name: 'Ann', callback: '555-0100', reason: 'x' } }), input);
+  assert.equal(held.booking.status, 'held');
+  assert.match(held.reply, /Monday, October 5, 9:00 AM–10:00 AM/);
+  assert.doesNotMatch(held.reply, /confirmation has been sent/i);
   assert.equal(groundTurn(turn({ language: 'es' }), receptionistInput.parse(JSON.parse(body({ profile: { ...profile, languages: ['en'] } })))).language, 'en');
   assert.throws(() => groundTurn({ reply: '' }, input));
 });
