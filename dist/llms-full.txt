@@ -81,6 +81,10 @@ Auto body & collision; plumbers, HVAC and contractors; chiropractic & wellness; 
 - Live booking calendar preview: https://legacyai.space/booking/
 - Missed-call text-back builder: https://legacyai.space/missed-call/
 
+## Live client sites
+- Precision Sewer Inspections: https://precisionsewerinspections.com/ — sewer scope inspections across Central Indiana with online booking and one-business-day HD video reports.
+- Simple Man Plumbing: https://www.simplemanplumbing.tech/ — a residential plumbing practice serving Indianapolis and the Northside.
+
 ## Contact
 - Email: douglas@legacyai.space
 - Site: https://legacyai.space
