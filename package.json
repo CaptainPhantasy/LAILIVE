@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "node build-seo.mjs && node build-vercel.mjs",
+    "build": "node build-seo.mjs && node build-knowledge.mjs && node build-vercel.mjs",
     "build:seo": "node build-seo.mjs",
     "dev": "node preview.mjs",
     "test": "node --test test/*.test.js"

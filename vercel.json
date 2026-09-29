@@ -16,6 +16,9 @@
     },
     "api/receptionist.js": {
       "maxDuration": 60
+    },
+    "api/assistant/notify.js": {
+      "maxDuration": 30
     }
   },
   "headers": [
@@ -40,6 +43,24 @@
           "value": "strict-origin-when-cross-origin"
         }
       ]
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/owner/digest",
+      "schedule": "0 16 * * *"
+    },
+    {
+      "path": "/api/owner/digest",
+      "schedule": "0 17 * * *"
+    },
+    {
+      "path": "/api/owner/digest",
+      "schedule": "0 22 * * *"
+    },
+    {
+      "path": "/api/owner/digest",
+      "schedule": "0 23 * * *"
     }
   ]
 }
