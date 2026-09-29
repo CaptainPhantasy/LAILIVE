@@ -8,3 +8,6 @@
 @media print{.cg-root{display:none!important}}
 
 .cg-intent{border:1px solid var(--cg-line);padding:20px;margin:20px 0;background:#eeeee4}.cg-root .cg-intent h4{font-size:24px;margin-bottom:10px}.cg-interest-row{display:flex;align-items:start;justify-content:space-between;gap:16px;padding:12px 0;border-top:1px solid var(--cg-line)}.cg-interest-row>div{min-width:0}.cg-interest-row strong{font-size:14px;font-weight:600}.cg-interest-row p{margin:5px 0 0}.cg-interest-row button{flex:none;font-size:12px!important}.cg-interest-row:last-child{padding-bottom:0}
+/* Leo (ElevenLabs widget) sits bottom-left; keep both floating controls clear of each other and of the page end. */
+body{padding-bottom:96px}
+@media(max-width:620px){.cg-launcher{bottom:calc(max(14px,env(safe-area-inset-bottom)) + 84px)}body{padding-bottom:170px}}
