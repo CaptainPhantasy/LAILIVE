@@ -152,3 +152,4 @@ footer{padding:48px 6%}footer a,footer p{font-size:.875rem}footer>.container{gri
 .thesis-board{border-left:3px solid currentColor;padding-left:18px;margin:28px 0;max-width:720px}.thesis-board a{text-decoration:underline;font-weight:600}
 .data-row .label a{color:inherit;text-decoration:underline;text-decoration-thickness:1px}
 .work{border-top:1px solid rgba(0,0,0,.08)}.work-intro{max-width:640px;margin:18px 0 28px}.work .industry-card a{text-decoration:underline;font-weight:600}
+@media(min-width:1000px){.work .industry-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
