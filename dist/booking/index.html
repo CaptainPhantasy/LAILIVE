@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Set your hours, load your existing .ics calendar and see the open appointment times customers would be offered, with buffers and no double-booking.">
+  <link rel="canonical" href="https://legacyai.space/booking/">
+  <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self'; media-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>Live booking calendar preview · Legacy AI Solutions</title>
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="LEGACY AI">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:url" content="https://legacyai.space/booking/">
+  <meta property="og:title" content="Live booking calendar preview · Legacy AI Solutions">
+  <meta property="og:description" content="See the open appointment times your customers would be offered — from your own hours and calendar, on your device.">
+  <meta property="og:image" content="https://legacyai.space/og-solutions.jpg">
+  <meta property="og:image:secure_url" content="https://legacyai.space/og-solutions.jpg">
+  <meta property="og:image:type" content="image/jpeg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Legacy AI social card: the LEGACY AI wordmark on aged paper above the line “We don’t sell technology. We sell results.” and 54 solutions · five pillars · legacyai.space">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Live booking calendar preview · Legacy AI Solutions">
+  <meta name="twitter:description" content="See the open appointment times your customers would be offered — from your own hours and calendar, on your device.">
+  <meta name="twitter:image" content="https://legacyai.space/og-solutions.jpg">
+  <meta name="twitter:image:alt" content="Legacy AI social card: the LEGACY AI wordmark on aged paper above the line “We don’t sell technology. We sell results.”">
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","@id":"https://legacyai.space/booking/#app","url":"https://legacyai.space/booking/","name":"Live booking calendar preview","applicationCategory":"BusinessApplication","browserRequirements":"Requires JavaScript","description":"A browser tool that turns business hours, buffers and an existing iCalendar file into the open appointment times a customer would be offered, entirely on the visitor's device.","provider":{"@id":"https://legacyai.space/#org"}},{"@type":"BreadcrumbList","@id":"https://legacyai.space/booking/#breadcrumb","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://legacyai.space/"},{"@type":"ListItem","position":2,"name":"Live booking calendar preview","item":"https://legacyai.space/booking/"}]}]}</script>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/contact-health/contact-health.css">
+  <link rel="stylesheet" href="/tools.css">
+  <link rel="stylesheet" href="/lead-gate.css">
+  <script type="module" src="./booking.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to the calendar</a>
+  <header class="ch-header">
+    <a class="ch-brand" href="/">LEGACY AI <span>SOLUTIONS</span></a>
+    <nav aria-label="Main navigation"><a href="/solutions/#the-live-booking-calendar">The booking calendar service</a><a href="/receptionist/">Receptionist test line</a><a href="/missed-call/">Missed-call text-back</a></nav>
+  </header>
+  <main id="main">
+    <div class="ch-intro">
+      <div><p class="ch-kicker">Try it on your own schedule / Scheduling</p><h1>Only the times<br>you are free.</h1><p class="ch-dek">Set your hours, bring your existing calendar, and see exactly which times a customer would be offered. Book one and watch it disappear — no phone tag, no double-booking.</p></div>
+      <aside class="ch-note" aria-label="How your calendar is handled"><p class="ch-kicker">On your device</p><h2>Your calendar stays here.</h2><p>Your hours and any calendar file you load are read in this page only. Nothing is uploaded, saved or shared, and no one is invited to anything.</p><p class="ch-small">In production the calendar connects directly to Google, Outlook or your scheduling system and updates as you work.</p></aside>
+    </div>
+    <noscript><p class="ch-error">The booking calendar needs JavaScript.</p></noscript>
+    <section class="ch-panel" aria-labelledby="hours-heading">
+      <div class="ch-step"><span aria-hidden="true">01</span><div><h2 id="hours-heading">Set your bookable hours.</h2><p>The buffer keeps travel or clean-up time clear before and after every appointment.</p></div></div>
+      <div class="tl-grid">
+        <fieldset class="tl-days tl-wide"><legend>Days you take appointments</legend><div id="days"></div></fieldset>
+        <label>First appointment<input id="open" type="time" value="09:00"></label>
+        <label>Last appointment ends by<input id="close" type="time" value="17:00"></label>
+        <label>Appointment length (minutes)<input id="length" type="number" min="5" max="480" step="5" value="60"></label>
+        <label>Buffer between appointments (minutes)<input id="buffer" type="number" min="0" max="240" step="5" value="15"></label>
+        <label>Minimum notice (hours)<input id="notice" type="number" min="0" max="336" value="12"></label>
+        <label>Days to show<input id="horizon" type="number" min="1" max="60" value="14"></label>
+      </div>
+    </section>
+    <section class="ch-panel" aria-labelledby="calendar-heading">
+      <div class="ch-step"><span aria-hidden="true">02</span><div><h2 id="calendar-heading">Bring your existing calendar.</h2><p>Optional. Export an .ics file from Google Calendar, Outlook or Apple Calendar and load it here. Busy events are blocked out; events marked free or cancelled are ignored.</p></div></div>
+      <label class="ch-file">Choose a calendar file (.ics)<input id="ics-file" type="file" accept=".ics,text/calendar"></label>
+      <p id="ics-summary" class="ch-small" role="status"></p>
+      <div class="ch-actions"><button id="clear-ics" class="ch-secondary" type="button" hidden>Remove loaded calendar</button></div>
+    </section>
+    <p id="error" class="ch-error" role="alert" hidden></p>
+    <section class="ch-panel" aria-labelledby="slots-heading">
+      <div class="ch-step"><span aria-hidden="true">03</span><div><h2 id="slots-heading">What your customers see.</h2><p id="slot-count" role="status"></p></div></div>
+      <div id="slots" class="tl-days-list"></div>
+      <div id="book" class="tl-card" hidden>
+        <h3 id="book-heading" tabindex="-1">Book this time</h3>
+        <p id="book-time"></p>
+        <form id="book-form"><label>Customer name<input id="customer" maxlength="120" autocomplete="off" required></label><label>What it is for <small>Optional</small><input id="purpose" maxlength="200" autocomplete="off"></label><div class="ch-actions"><button type="submit">Book it</button><button id="cancel-book" class="ch-secondary" type="button">Choose another time</button></div></form>
+      </div>
+      <div id="booked" hidden><h3>Booked in this session</h3><ul id="booked-list" class="ch-issues"></ul><div class="ch-actions"><button id="download-ics" class="ch-secondary" type="button">Download bookings (.ics)</button><button id="reset-bookings" class="ch-secondary" type="button">Clear bookings</button></div><p class="ch-small">The download adds these test bookings to a calendar only if you choose to import it.</p></div>
+    </section>
+    <section class="ch-next" aria-labelledby="next-heading"><p class="ch-kicker">From a preview to your website</p><h2 id="next-heading">Let customers book themselves.</h2><p>Explore <a href="/solutions/#the-live-booking-calendar">The Live Booking Calendar</a>, let the <a href="/receptionist/">receptionist</a> book by phone, or <button id="discuss" class="ch-secondary" type="button">talk to Douglas about your calendar</button></p><p id="discuss-status" class="ch-small" role="status"></p></section>
+  </main>
+  <footer><span>Legacy AI Solutions</span><a href="mailto:douglas@legacyai.space">douglas@legacyai.space</a><a href="/">legacyai.space</a></footer>
+</body>
+</html>

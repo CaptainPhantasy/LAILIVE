@@ -17,6 +17,18 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://legacyai.space/receptionist/</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://legacyai.space/booking/</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://legacyai.space/missed-call/</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://legacyai.space/deal/</loc>
     <priority>0.8</priority>
   </url>

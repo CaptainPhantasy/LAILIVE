@@ -1,0 +1,22 @@
+/* Shared additions for the working service tools. Base styles: /contact-health/contact-health.css */
+input[type=text],input[type=tel],input[type=url],input[type=time],input[type=number],input:not([type]){width:100%;background:#fffef9;border:1px solid #8c9c8c;border-radius:0;padding:10px 12px;color:#233c2e;margin:6px 0 0;min-height:46px}
+.tl-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 24px}.tl-grid .tl-wide{grid-column:1/-1}
+.tl-days{border:0;padding:0;margin:0}.tl-days legend{margin-bottom:6px}.tl-days div{display:flex;flex-wrap:wrap;gap:8px}.tl-days label{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid #8c9c8c;background:#fffef9;cursor:pointer}
+.tl-inline{display:flex;flex-wrap:wrap;gap:8px 20px}.tl-inline label{display:inline-flex;align-items:center;gap:8px}
+.tl-days-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:18px;margin:24px 0}.tl-day{border:1px solid var(--ch-line);padding:16px;background:#fffef938}.tl-day h3{font-size:1.5rem;margin-bottom:12px}.tl-day ul{list-style:none;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:8px}
+.tl-slot{min-height:40px;padding:8px 14px;background:transparent;color:var(--ch-ink);border-color:#8c9c8c}.tl-slot:hover,.tl-slot[aria-pressed=true]{background:var(--ch-ink);color:var(--ch-paper)}
+.tl-card{background:var(--ch-soft);border-top:4px solid #36563b;padding:26px 28px;margin:24px 0}.tl-card h3{margin-bottom:12px}.tl-card dl{display:grid;grid-template-columns:minmax(110px,160px) 1fr;gap:6px 18px;margin:0}.tl-card dt{color:var(--ch-muted)}.tl-card dd{margin:0;overflow-wrap:anywhere}
+.tl-call{display:grid;grid-template-columns:1.3fr .9fr;gap:32px;align-items:start}
+.tl-log{list-style:none;padding:0;margin:0 0 18px;max-height:480px;overflow-y:auto;border:1px solid var(--ch-line);background:#fffef9}.tl-log li{padding:14px 18px;border-bottom:1px solid var(--ch-line)}.tl-log li:last-child{border-bottom:0}.tl-log .tl-who{display:block;font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ch-muted)}.tl-log .tl-receptionist{background:var(--ch-soft)}.tl-log:empty::before{content:'The call log appears here.';display:block;padding:18px;color:var(--ch-muted)}
+.tl-say{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:end}.tl-say textarea{min-height:60px}
+.tl-live{display:inline-flex;align-items:center;gap:10px}.tl-live::before{content:'';width:10px;height:10px;border-radius:50%;background:#9b7650}.tl-live[data-state=listening]::before{background:#b3261e;animation:tl-pulse 1s infinite}.tl-live[data-state=speaking]::before{background:#36563b}
+@keyframes tl-pulse{50%{opacity:.3}}
+.tl-messages{display:grid;gap:22px}.tl-message{border:1px solid var(--ch-line);padding:20px 22px;background:#fffef938}.tl-message h3{font-size:1.6rem;margin-bottom:8px}.tl-message textarea{min-height:120px;font:1rem/1.5 Reading,Georgia,serif}
+.tl-meter{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:.88rem;color:var(--ch-muted);margin:8px 0}.tl-meter strong{color:var(--ch-ink);font-weight:600}
+.tl-warn{list-style:none;padding:0;margin:8px 0 0}.tl-warn li{border-left:3px solid #9b7650;padding:4px 10px;margin:6px 0;font-size:.9rem;color:#6a4a2a;background:#f6efe4}
+.tl-ok{font-size:.9rem;color:#36563b;margin:8px 0 0}
+.tl-phone{max-width:340px;border:10px solid #22342a;border-radius:28px;padding:18px 14px;background:#f2f1ec;min-height:360px}.tl-phone p.tl-from{text-align:center;font-size:.8rem;color:var(--ch-muted);margin-bottom:14px}.tl-bubble{background:#e3e7da;border-radius:16px 16px 16px 4px;padding:10px 14px;margin:0 30px 10px 0;font:15px/1.45 system-ui,sans-serif;color:#1d2a22;white-space:pre-wrap;overflow-wrap:anywhere}
+.tl-split{display:grid;grid-template-columns:1.3fr .8fr;gap:36px;align-items:start}
+@media(max-width:800px){.tl-call,.tl-split{grid-template-columns:1fr}}
+@media(max-width:480px){.tl-grid{grid-template-columns:1fr}.tl-card{padding:20px}.tl-card dl{grid-template-columns:1fr;gap:0}.tl-card dd{margin-bottom:8px}.tl-say{grid-template-columns:1fr}.tl-phone{max-width:none}}
+@media(prefers-reduced-motion:reduce){.tl-live[data-state=listening]::before{animation:none}}

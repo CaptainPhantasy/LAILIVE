@@ -13,6 +13,9 @@
     },
     "api/owner/*.js": {
       "maxDuration": 60
+    },
+    "api/receptionist.js": {
+      "maxDuration": 60
     }
   },
   "headers": [

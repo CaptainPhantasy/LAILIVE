@@ -77,6 +77,9 @@ Auto body & collision; plumbers, HVAC and contractors; chiropractic & wellness; 
 - The Deal: https://legacyai.space/deal/
 - The Board: https://legacyai.space/board/
 - Contact-list health check: https://legacyai.space/contact-health/
+- AI receptionist test line: https://legacyai.space/receptionist/
+- Live booking calendar preview: https://legacyai.space/booking/
+- Missed-call text-back builder: https://legacyai.space/missed-call/
 
 ## Contact
 - Email: douglas@legacyai.space

@@ -10,7 +10,7 @@ const SELF_DESCRIPTION = /\b(?:my|our)\s+(?:name|company|business|address|phone)
 const SENSITIVE = /password|passcode|passwd|\bpin\b|\botp\b|token|secret|api[-_\s]?key|credit|debit|card|\bcvv\b|\bcvc\b|cc-|billing|bank|iban|routing|\bssn\b|social.?security|verification|auth|csv|upload|bulk|file/i;
 
 export function publicCapturePage(path) {
-  return typeof path === 'string' && /^\/(?!\/)[^?#]*$/.test(path) && path.length <= 200 && !/^\/(?:owner|api|contact-health)(?:\/|$)/i.test(path);
+  return typeof path === 'string' && /^\/(?!\/)[^?#]*$/.test(path) && path.length <= 200 && !/^\/(?:owner|api|contact-health|receptionist|booking|missed-call)(?:\/|$)/i.test(path);
 }
 
 export function eligibleCaptureField(field) {

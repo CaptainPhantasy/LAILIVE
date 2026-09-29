@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Write the automatic texts a caller receives after a missed call, in English and Spanish, with live SMS segment counts and carrier-friendly checks.">
+  <link rel="canonical" href="https://legacyai.space/missed-call/">
+  <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self'; media-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>Missed-call text-back builder · Legacy AI Solutions</title>
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="LEGACY AI">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:url" content="https://legacyai.space/missed-call/">
+  <meta property="og:title" content="Missed-call text-back builder · Legacy AI Solutions">
+  <meta property="og:description" content="Write the automatic text a caller gets after a missed call — checked for length, segments and opt-out wording.">
+  <meta property="og:image" content="https://legacyai.space/og-solutions.jpg">
+  <meta property="og:image:secure_url" content="https://legacyai.space/og-solutions.jpg">
+  <meta property="og:image:type" content="image/jpeg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Legacy AI social card: the LEGACY AI wordmark on aged paper above the line “We don’t sell technology. We sell results.” and 54 solutions · five pillars · legacyai.space">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Missed-call text-back builder · Legacy AI Solutions">
+  <meta name="twitter:description" content="Write the automatic text a caller gets after a missed call — checked for length, segments and opt-out wording.">
+  <meta name="twitter:image" content="https://legacyai.space/og-solutions.jpg">
+  <meta name="twitter:image:alt" content="Legacy AI social card: the LEGACY AI wordmark on aged paper above the line “We don’t sell technology. We sell results.”">
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","@id":"https://legacyai.space/missed-call/#app","url":"https://legacyai.space/missed-call/","name":"Missed-call text-back builder","applicationCategory":"BusinessApplication","browserRequirements":"Requires JavaScript","description":"A browser tool that drafts missed-call text-back messages in English and Spanish and checks SMS encoding, billed segments, business identification, opt-out wording and link shorteners.","provider":{"@id":"https://legacyai.space/#org"}},{"@type":"BreadcrumbList","@id":"https://legacyai.space/missed-call/#breadcrumb","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://legacyai.space/"},{"@type":"ListItem","position":2,"name":"Missed-call text-back builder","item":"https://legacyai.space/missed-call/"}]}]}</script>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/contact-health/contact-health.css">
+  <link rel="stylesheet" href="/tools.css">
+  <link rel="stylesheet" href="/lead-gate.css">
+  <script type="module" src="./missed-call.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to the text-back builder</a>
+  <header class="ch-header">
+    <a class="ch-brand" href="/">LEGACY AI <span>SOLUTIONS</span></a>
+    <nav aria-label="Main navigation"><a href="/solutions/#the-missed-call-recovery">The missed-call service</a><a href="/receptionist/">Receptionist test line</a><a href="/booking/">Booking calendar</a></nav>
+  </header>
+  <main id="main">
+    <div class="ch-intro">
+      <div><p class="ch-kicker">Try it on your own business / SMS · Auto</p><h1>Every missed call<br>gets a text back.</h1><p class="ch-dek">Write the texts a caller receives seconds after you miss them — during hours, after hours and in Spanish. Each one is checked for length, billing segments and the details carriers expect.</p></div>
+      <aside class="ch-note" aria-label="How your messages are handled"><p class="ch-kicker">On your device</p><h2>Nothing is sent from here.</h2><p>Your messages are written and checked in this page. No texts are sent and nothing is saved.</p><p class="ch-small">In production, business texting needs a registered number (10DLC) and a caller’s phone call does not by itself give permission for marketing. These checks are guidance, not carrier approval.</p></aside>
+    </div>
+    <noscript><p class="ch-error">The text-back builder needs JavaScript.</p></noscript>
+    <section class="ch-panel" aria-labelledby="details-heading">
+      <div class="ch-step"><span aria-hidden="true">01</span><div><h2 id="details-heading">Your details.</h2><p>These fill in the starting messages. You can edit every word afterwards.</p></div></div>
+      <div class="tl-grid">
+        <label>Business name<input id="business" maxlength="60" autocomplete="off" placeholder="Your business name"></label>
+        <label>Online booking link <small>Optional. Use your own domain.</small><input id="link" type="url" maxlength="200" autocomplete="off" placeholder="example.com/book"></label>
+        <label>Business hours <small>Optional</small><input id="hours" maxlength="80" autocomplete="off" placeholder="Mon–Fri 8–5"></label>
+        <label>When you reply after hours <small>Optional</small><input id="callback" maxlength="80" autocomplete="off" placeholder="by 9am the next business day"></label>
+        <label class="ch-check tl-wide"><input id="spanish" type="checkbox"><span>Add Spanish versions</span></label>
+      </div>
+      <div class="ch-actions"><button id="write" type="button">Write my text-backs</button></div>
+      <p id="error" class="ch-error" role="alert" hidden></p>
+    </section>
+    <section id="results" class="ch-panel" aria-labelledby="messages-heading" hidden>
+      <div class="ch-step"><span aria-hidden="true">02</span><div><h2 id="messages-heading" tabindex="-1">Edit and check.</h2><p>Counts update as you type. One segment is 160 plain characters, or 70 when a message uses accents, emoji or curly quotes.</p></div></div>
+      <div class="tl-split"><div id="messages" class="tl-messages"></div><div><p class="ch-kicker">Preview</p><div class="tl-phone" aria-label="Phone preview of the selected message"><p class="tl-from" id="preview-from"></p><div id="preview" class="tl-bubble"></div></div></div></div>
+      <div class="ch-actions"><button id="download" type="button">Download my messages</button><button id="copy-all" class="ch-secondary" type="button">Copy all messages</button></div>
+      <p id="status" class="ch-status" role="status" aria-live="polite"></p>
+    </section>
+    <section class="ch-next" aria-labelledby="next-heading"><p class="ch-kicker">From words to a working system</p><h2 id="next-heading">Put it on your phone line.</h2><p>Explore <a href="/solutions/#the-missed-call-recovery">The Missed-Call Recovery</a>, or answer every call with the <a href="/receptionist/">receptionist</a>. <button id="discuss" class="ch-secondary" type="button">Talk to Douglas about text-backs</button></p><p id="discuss-status" class="ch-small" role="status"></p></section>
+  </main>
+  <footer><span>Legacy AI Solutions</span><a href="mailto:douglas@legacyai.space">douglas@legacyai.space</a><a href="/">legacyai.space</a></footer>
+</body>
+</html>

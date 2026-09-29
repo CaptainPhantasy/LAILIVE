@@ -10,6 +10,9 @@ const pages = [
   { url: '/solutions/', priority: '0.9' },
   { url: '/intake/', priority: '0.9' },
   { url: '/contact-health/', priority: '0.8' },
+  { url: '/receptionist/', priority: '0.8' },
+  { url: '/booking/', priority: '0.8' },
+  { url: '/missed-call/', priority: '0.8' },
   { url: '/deal/', priority: '0.8' },
   { url: '/board/', priority: '0.7' },
 ];
@@ -36,6 +39,9 @@ Legacy AI is led by founder Douglas Talley and based in Brown County, Indiana. E
 - [The Deal](${site}/deal/): Five steps from a 30-minute call to launch and ongoing improvement, plus the six industries already served.
 - [The Board](${site}/board/): Five AI advisor perspectives examine one business decision — recommendation, dissent, risks, next steps.
 - [Contact-list health check](${site}/contact-health/): A browser tool that reviews a customer CSV for missing details, duplicate rows and conflicting contact information.
+- [AI receptionist test line](${site}/receptionist/): Describe a business, then call an AI receptionist by voice or text in English or Spanish; it answers only from those details, captures the caller and holds an open time.
+- [Live booking calendar preview](${site}/booking/): Turns business hours, buffers and an existing .ics calendar into the open times customers would be offered, on the visitor's device.
+- [Missed-call text-back builder](${site}/missed-call/): Drafts missed-call text-backs in English and Spanish with SMS segment counts and carrier-friendly checks.
 
 ## Contact
 - Email: douglas@legacyai.space
@@ -73,6 +79,9 @@ ${catalog.services.map(s => `- ${s.name} (${s.tag}): ${s.body}`).join('\n')}
 - The Deal: ${site}/deal/
 - The Board: ${site}/board/
 - Contact-list health check: ${site}/contact-health/
+- AI receptionist test line: ${site}/receptionist/
+- Live booking calendar preview: ${site}/booking/
+- Missed-call text-back builder: ${site}/missed-call/
 
 ## Contact
 - Email: douglas@legacyai.space
