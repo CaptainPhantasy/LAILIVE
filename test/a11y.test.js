@@ -10,6 +10,9 @@ const pages = {
   '/board/': 'dist/board/index.html',
   '/deal/': 'dist/deal/index.html',
   '/contact-health/': 'dist/contact-health/index.html',
+  '/receptionist/': 'dist/receptionist/index.html',
+  '/booking/': 'dist/booking/index.html',
+  '/missed-call/': 'dist/missed-call/index.html',
 };
 
 const eachNode = (node, visit) => {

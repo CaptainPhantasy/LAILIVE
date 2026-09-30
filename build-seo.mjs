@@ -10,6 +10,9 @@ const pages = [
   { url: '/solutions/', priority: '0.9' },
   { url: '/intake/', priority: '0.9' },
   { url: '/contact-health/', priority: '0.8' },
+  { url: '/receptionist/', priority: '0.8' },
+  { url: '/booking/', priority: '0.8' },
+  { url: '/missed-call/', priority: '0.8' },
   { url: '/deal/', priority: '0.8' },
   { url: '/board/', priority: '0.7' },
 ];
@@ -36,9 +39,18 @@ Legacy AI is led by founder Douglas Talley and based in Brown County, Indiana. E
 - [The Deal](${site}/deal/): Five steps from a 30-minute call to launch and ongoing improvement, plus the six industries already served.
 - [The Board](${site}/board/): Five AI advisor perspectives examine one business decision — recommendation, dissent, risks, next steps.
 - [Contact-list health check](${site}/contact-health/): A browser tool that reviews a customer CSV for missing details, duplicate rows and conflicting contact information.
+- [AI receptionist test line](${site}/receptionist/): Describe a business, then call an AI receptionist by voice or text in English or Spanish; it answers only from those details, captures the caller and holds an open time.
+- [Live booking calendar preview](${site}/booking/): Turns business hours, buffers and an existing .ics calendar into the open times customers would be offered, on the visitor's device.
+- [Missed-call text-back builder](${site}/missed-call/): Drafts missed-call text-backs in English and Spanish with SMS segment counts and carrier-friendly checks.
+
+## Live client sites
+- [Precision Sewer Inspections](https://precisionsewerinspections.com/): Sewer scope inspections across Central Indiana with online booking and one-business-day HD video reports.
+- [Simple Man Plumbing](https://www.simplemanplumbing.tech/): A residential plumbing practice serving Indianapolis and the Northside.
+- [Indiana Drain Company](https://www.indianadraincompany.com/): Drain cleaning, hydro jetting and sewer repair across Central Indiana, affiliated with Precision Sewer Inspections.
 
 ## Contact
 - Email: douglas@legacyai.space
+- Phone: (812) 302-2525
 - Site: ${site}
 - Field guide (PDF): ${site}/catalog.pdf
 
@@ -55,7 +67,7 @@ Legacy AI is led by founder Douglas Talley and based in Brown County, Indiana. E
 
 ## How engagements work
 1. You tell us what's broken — describe the pain points on a 30-minute call. No pitch.
-2. We agree on the plan — scope, price and timeline in writing before work begins. Most projects begin with a deposit; for service trades, advertising exchanges or combined arrangements, the value and commitments are agreed up front.
+2. We agree on the plan — scope, price and timeline in writing before work begins. Custom websites start around $3,500 and the client owns the site after handoff; ongoing services and management are quoted separately. Most projects begin with a deposit; for service trades, advertising exchanges or combined arrangements, the value and commitments are agreed up front.
 3. We build. You see it working — configuration, customization and testing, then a walkthrough with your branding and workflow. One session.
 4. We go live together — launch and put it to work. Payments follow the agreed schedule, with milestones for larger projects. Day one.
 5. We keep making it better — monthly reports, quarterly reviews, ongoing improvements.
@@ -73,9 +85,18 @@ ${catalog.services.map(s => `- ${s.name} (${s.tag}): ${s.body}`).join('\n')}
 - The Deal: ${site}/deal/
 - The Board: ${site}/board/
 - Contact-list health check: ${site}/contact-health/
+- AI receptionist test line: ${site}/receptionist/
+- Live booking calendar preview: ${site}/booking/
+- Missed-call text-back builder: ${site}/missed-call/
+
+## Live client sites
+- Precision Sewer Inspections: https://precisionsewerinspections.com/ — sewer scope inspections across Central Indiana with online booking and one-business-day HD video reports.
+- Simple Man Plumbing: https://www.simplemanplumbing.tech/ — a residential plumbing practice serving Indianapolis and the Northside.
+- Indiana Drain Company: https://www.indianadraincompany.com/ — drain cleaning, hydro jetting and sewer repair across Central Indiana, affiliated with Precision Sewer Inspections.
 
 ## Contact
 - Email: douglas@legacyai.space
+- Phone: (812) 302-2525
 - Site: ${site}
 - Field guide (PDF): ${site}/catalog.pdf
 `;

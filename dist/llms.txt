@@ -11,9 +11,18 @@ Legacy AI is led by founder Douglas Talley and based in Brown County, Indiana. E
 - [The Deal](https://legacyai.space/deal/): Five steps from a 30-minute call to launch and ongoing improvement, plus the six industries already served.
 - [The Board](https://legacyai.space/board/): Five AI advisor perspectives examine one business decision — recommendation, dissent, risks, next steps.
 - [Contact-list health check](https://legacyai.space/contact-health/): A browser tool that reviews a customer CSV for missing details, duplicate rows and conflicting contact information.
+- [AI receptionist test line](https://legacyai.space/receptionist/): Describe a business, then call an AI receptionist by voice or text in English or Spanish; it answers only from those details, captures the caller and holds an open time.
+- [Live booking calendar preview](https://legacyai.space/booking/): Turns business hours, buffers and an existing .ics calendar into the open times customers would be offered, on the visitor's device.
+- [Missed-call text-back builder](https://legacyai.space/missed-call/): Drafts missed-call text-backs in English and Spanish with SMS segment counts and carrier-friendly checks.
+
+## Live client sites
+- [Precision Sewer Inspections](https://precisionsewerinspections.com/): Sewer scope inspections across Central Indiana with online booking and one-business-day HD video reports.
+- [Simple Man Plumbing](https://www.simplemanplumbing.tech/): A residential plumbing practice serving Indianapolis and the Northside.
+- [Indiana Drain Company](https://www.indianadraincompany.com/): Drain cleaning, hydro jetting and sewer repair across Central Indiana, affiliated with Precision Sewer Inspections.
 
 ## Contact
 - Email: douglas@legacyai.space
+- Phone: (812) 302-2525
 - Site: https://legacyai.space
 - Field guide (PDF): https://legacyai.space/catalog.pdf
 
