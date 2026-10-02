@@ -66,9 +66,12 @@ function speak(value) {
   }
   stopSpeaking();
   return new Promise(resolve => {
-    const audio = new Audio(`data:audio/mpeg;base64,${value.audio.base64}`);
+    const bytes = Uint8Array.from(atob(value.audio.base64), char => char.charCodeAt(0));
+    const audioUrl = URL.createObjectURL(new Blob([bytes], { type: 'audio/mpeg' }));
+    const audio = new Audio(audioUrl);
     const finish = () => {
       audio.onended = audio.onerror = null;
+      URL.revokeObjectURL(audioUrl);
       if (playingAudio?.audio === audio) playingAudio = null;
       resolve();
     };
