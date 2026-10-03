@@ -71,3 +71,16 @@ test('missing voice settings and provider failures keep safe text, without leaki
     assert.doesNotMatch(JSON.stringify(value), /private|server-test-secret/);
   }
 });
+
+test('the receptionist accepts the exact existing Vercel key name', async () => {
+  let receivedKey;
+  const speak = createReceptionistSpeech({
+    env: { ElevenLabs_API_Key: 'existing-setting-test-secret' },
+    fetcher: async (_url, options) => {
+      receivedKey = options.headers['xi-api-key'];
+      return new Response(new Uint8Array([73, 68, 51]), { headers: { 'content-type': 'audio/mpeg' } });
+    },
+  });
+  await speak('Hello. How can I help?', 'en');
+  assert.equal(receivedKey, 'existing-setting-test-secret');
+});
