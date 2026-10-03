@@ -52,13 +52,17 @@ test('invented times are dropped and a hold needs a name and callback number', (
   const input = receptionistInput.parse(JSON.parse(body()));
   const invented = groundTurn(turn({ reply: 'Your Friday appointment is confirmed and the text is on its way.', booking: { slotId: '20261231T2300', status: 'held' } }), input);
   assert.deepEqual(invented.booking, { slotId: null, status: 'none' });
-  assert.equal(invented.reply, 'Your Friday appointment is confirmed and the text is on its way.');
+  assert.doesNotMatch(invented.reply, /Friday|confirmed|text is on its way/i);
+  assert.match(invented.reply, /no appointment|no verified appointment/i);
   const missingDetails = groundTurn(turn({ reply: 'You are booked.', booking: { slotId: '20261005T0900', status: 'held' } }), input);
   assert.equal(missingDetails.booking.status, 'offered');
-  assert.equal(missingDetails.reply, 'You are booked.');
+  assert.match(missingDetails.reply, /your name and callback number/i);
+  assert.doesNotMatch(missingDetails.reply, /you are booked/i);
   const held = groundTurn(turn({ reply: 'Your confirmation has been sent.', booking: { slotId: '20261005T0900', status: 'held' }, caller: { name: 'Ann', callback: '555-0100', reason: 'x' } }), input);
   assert.equal(held.booking.status, 'held');
-  assert.equal(held.reply, 'Your confirmation has been sent.');
+  assert.match(held.reply, /Monday, October 5, 9:00 AM–10:00 AM/);
+  assert.match(held.reply, /business to confirm/);
+  assert.doesNotMatch(held.reply, /confirmation has been sent/i);
   assert.equal(groundTurn(turn({ language: 'es' }), receptionistInput.parse(JSON.parse(body({ profile: { ...profile, languages: ['en'] } })))).language, 'en');
   assert.throws(() => groundTurn({ reply: '' }, input));
 });
@@ -95,4 +99,79 @@ test('client helpers parse services, require the essentials and build a call rec
   assert.match(record, /held for you to confirm/);
   assert.match(record, /Nothing was booked, texted or emailed/);
   assert.match(record, /Receptionist: Hello/);
+});
+
+
+test('booking replies use the validated status, including contradictory none metadata', () => {
+  const input = receptionistInput.parse(JSON.parse(body()));
+  const caller = { name: 'Ann', callback: '555-0100', reason: 'Drain cleaning' };
+  for (const booking of [
+    { slotId: '20261005T0900', status: 'none' },
+    { slotId: '20261231T2300', status: 'offered' },
+    { slotId: null, status: 'held' },
+  ]) {
+    const value = groundTurn(turn({ booking, caller, reply: 'Your Friday appointment is booked.', endCall: true }), input);
+    assert.deepEqual(value.booking, { slotId: null, status: 'none' });
+    assert.doesNotMatch(value.reply, /Friday|Monday|is booked/i);
+    assert.match(value.reply, /no appointment/i);
+    assert.equal(value.endCall, false, 'a correction requesting details keeps the call open');
+  }
+  for (const [name, callback, missing] of [['', '555-0100', /your name/], ['Ann', ' ', /your callback number/]]) {
+    const value = groundTurn(turn({ caller: { ...caller, name, callback }, booking: { slotId: slots[0].id, status: 'held' } }), input);
+    assert.equal(value.booking.status, 'offered');
+    assert.match(value.reply, missing);
+    assert.doesNotMatch(value.reply, /I have .* held/);
+  }
+  const offered = groundTurn(turn({ caller, reply: 'I booked Friday and emailed you.' }), input);
+  assert.equal(offered.booking.status, 'offered');
+  assert.match(offered.reply, /Would you like/);
+  assert.match(offered.reply, /Monday, October 5/);
+  assert.doesNotMatch(offered.reply, /Friday|emailed you|I booked/);
+});
+
+test('false confirmations cannot escape through none booking metadata in either language', () => {
+  for (const language of ['en', 'es']) {
+    const input = receptionistInput.parse(JSON.parse(body({ profile: { ...profile, languages: [language] }, slots: [] })));
+    for (const reply of language === 'en'
+      ? ['Your appointment is confirmed.', 'I sent your confirmation text.', 'You are all booked for Friday.', 'Your calendar invite is on its way.', 'You are all set for Friday at nine.']
+      : ['Su cita está confirmada.', 'Le envié la confirmación por correo.', 'Ya está reservado para el viernes.', 'Todo listo para el viernes.']) {
+      const value = groundTurn(turn({ language, reply, booking: { slotId: null, status: 'none' } }), input);
+      assert.deepEqual(value.booking, { slotId: null, status: 'none' });
+      assert.notEqual(value.reply, reply);
+      assert.match(value.reply, language === 'en' ? /no appointment/ : /ninguna cita/);
+    }
+  }
+});
+
+test('Spanish booking wording follows validated state and language fallback', () => {
+  const input = receptionistInput.parse(JSON.parse(body()));
+  const value = groundTurn(turn({ language: 'es', reply: 'Su cita está confirmada.', booking: { slotId: slots[0].id, status: 'held' }, caller: { name: 'Ana', callback: '555-0100', reason: 'x' } }), input);
+  assert.equal(value.booking.status, 'held');
+  assert.match(value.reply, /negocio lo confirme/);
+  assert.match(value.reply, /Monday, October 5/);
+  assert.doesNotMatch(value.reply, /cita está confirmada/);
+  const fallback = groundTurn(turn({ language: 'es' }), receptionistInput.parse(JSON.parse(body({ profile: { ...profile, languages: ['en'] } }))));
+  assert.equal(fallback.language, 'en');
+  assert.match(fallback.reply, /I can offer/);
+});
+
+test('non-booking greetings and business answers retain their model reply', () => {
+  const input = receptionistInput.parse(JSON.parse(body()));
+  for (const reply of ['Hello, Acme Plumbing. How can I help?', 'Drain cleaning starts at $149. What is your name?', 'For immediate danger, hang up and call 911.']) {
+    const value = groundTurn(turn({ reply, booking: { slotId: null, status: 'none' } }), input);
+    assert.equal(value.reply, reply);
+  }
+});
+
+test('the API returns the safe reply used by the transcript, speech and call record', async () => {
+  const generated = turn({ reply: 'Your Friday appointment is confirmed and I sent a text.', booking: { slotId: '20261231T2300', status: 'held' } });
+  const handler = createReceptionistHandler({ generate: async () => generated, getStore: () => granted });
+  const response = await handler(req({ 'x-legacy-inquiry': id }));
+  assert.equal(response.status, 200);
+  const value = await response.json();
+  assert.deepEqual(value.booking, { slotId: null, status: 'none' });
+  assert.doesNotMatch(value.reply, /Friday|is confirmed|sent a text/);
+  const record = callRecord({ profile, slots, messages: [{ role: 'receptionist', content: value.reply }], turn: value });
+  assert.match(record, /Appointment: None/);
+  assert.doesNotMatch(record, /Friday|is confirmed|sent a text/);
 });

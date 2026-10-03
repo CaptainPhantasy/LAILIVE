@@ -5,7 +5,7 @@ import { requestLead } from '../lead-gate.js';
 const $ = id => document.getElementById(id);
 const node = (tag, text, cls) => { const el = document.createElement(tag); if (text !== undefined) el.textContent = text; if (cls) el.className = cls; return el; };
 const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-const synth = 'speechSynthesis' in window ? window.speechSynthesis : null;
+let playingAudio = null;
 let receipt = null, call = null, busy = false, recognizer = null, listening = false;
 
 for (const [index, name] of DAY_NAMES.entries()) {
@@ -52,18 +52,34 @@ function addLine(role, content) {
   $('log').append(item); $('log').scrollTop = $('log').scrollHeight;
 }
 
-function speak(text, language) {
+function stopSpeaking() {
+  if (!playingAudio) return;
+  const { audio, finish } = playingAudio;
+  audio.pause(); finish();
+}
+
+function speak(value) {
+  if (!$('speak').checked) return Promise.resolve();
+  if (!value.audio) {
+    error(value.voiceError || 'The ElevenLabs voice is unavailable. You can keep typing.');
+    return Promise.resolve();
+  }
+  stopSpeaking();
   return new Promise(resolve => {
-    if (!synth || !$('speak').checked) return resolve();
-    try {
-      synth.cancel();
-      const utterance = new SpeechSynthesisUtterance(text), lang = language === 'es' ? 'es' : 'en';
-      utterance.lang = lang === 'es' ? 'es-US' : 'en-US';
-      const voice = synth.getVoices().find(v => v.lang?.toLowerCase().startsWith(lang + '-us')) || synth.getVoices().find(v => v.lang?.toLowerCase().startsWith(lang));
-      if (voice) utterance.voice = voice;
-      utterance.onend = utterance.onerror = () => resolve();
-      live('speaking', 'Receptionist speaking…'); synth.speak(utterance);
-    } catch { resolve(); } // Speech output is optional; the transcript already shows the reply.
+    const bytes = Uint8Array.from(atob(value.audio.base64), char => char.charCodeAt(0));
+    const audioUrl = URL.createObjectURL(new Blob([bytes], { type: 'audio/mpeg' }));
+    const audio = new Audio(audioUrl);
+    const finish = () => {
+      audio.onended = audio.onerror = null;
+      URL.revokeObjectURL(audioUrl);
+      if (playingAudio?.audio === audio) playingAudio = null;
+      resolve();
+    };
+    playingAudio = { audio, finish };
+    audio.onended = finish;
+    audio.onerror = () => { error('Voice playback failed. You can keep typing.'); finish(); };
+    live('speaking', 'Receptionist speaking…');
+    audio.play().catch(() => { error('Your browser blocked voice playback. You can keep typing.'); finish(); });
   });
 }
 
@@ -72,13 +88,13 @@ async function turn() {
   busy = true; $('send').disabled = true; $('talk').disabled = true; error(); live('thinking', 'Receptionist answering…');
   const controller = new AbortController(), timeout = setTimeout(() => controller.abort(), 40000);
   try {
-    const response = await fetch('/api/receptionist', { method: 'POST', signal: controller.signal, credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-Legacy-Inquiry': receipt.id }, body: JSON.stringify({ profile: call.profile, slots: call.slots, messages: call.messages }) });
+    const response = await fetch('/api/receptionist', { method: 'POST', signal: controller.signal, credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-Legacy-Inquiry': receipt.id }, body: JSON.stringify({ profile: call.profile, slots: call.slots, messages: call.messages, speak: $('speak').checked }) });
     let value; try { value = await response.json(); } catch { throw new Error('The receptionist did not return a readable reply. Please try again.'); }
     if (!response.ok) throw new Error(typeof value?.error === 'string' ? value.error : 'The receptionist could not answer. Please try again.');
     if (typeof value?.reply !== 'string' || !value.caller || !value.booking) throw new Error('The receptionist returned an incomplete reply. Please try again.');
     call.turn = value; call.language = value.language; call.messages.push({ role: 'receptionist', content: value.reply });
     addLine('receptionist', value.reply); renderOwner();
-    await speak(value.reply, value.language);
+    await speak(value);
     if (value.endCall) return finish('The caller said goodbye. Here is what you would receive.');
     live('idle', 'Your turn to speak');
   } catch (e) {
@@ -107,7 +123,7 @@ if (Recognition) {
   $('talk').addEventListener('click', () => {
     if (listening) { recognizer?.stop(); return; }
     if (!call || busy) return;
-    synth?.cancel();
+    stopSpeaking();
     recognizer = new Recognition();
     recognizer.lang = call.language === 'es' ? 'es-US' : 'en-US';
     recognizer.interimResults = true; recognizer.maxAlternatives = 1; recognizer.continuous = false;
@@ -126,7 +142,6 @@ if (Recognition) {
     catch { listening = false; error('Voice input could not start. You can type instead.'); }
   });
 }
-if (!synth) { $('speak').checked = false; $('speak').closest('label').hidden = true; }
 
 $('start').addEventListener('click', async () => {
   if (busy) return;
@@ -139,7 +154,7 @@ $('start').addEventListener('click', async () => {
   } catch (e) { error(e.message); }
   $('start').disabled = false;
   if (!receipt) { status('Send an inquiry when you are ready to place a test call.'); return; }
-  synth?.cancel(); $('log').replaceChildren(); $('download').onclick = null;
+  stopSpeaking(); $('log').replaceChildren(); $('download').onclick = null;
   call = { profile: details, slots, messages: [], turn: null, language: details.languages[0], startedAt: new Date() };
   $('call').hidden = false; $('start').hidden = true; $('hang-up').hidden = false; $('start').textContent = 'Start a new test call';
   status(`Inquiry received (${receipt.id}). Your test line is ringing.`); renderOwner(); $('call-heading').focus();
@@ -148,7 +163,7 @@ $('start').addEventListener('click', async () => {
 
 function finish(message) {
   if (!call) return;
-  recognizer?.abort(); synth?.cancel();
+  recognizer?.abort(); stopSpeaking();
   call.endedAt = new Date(); status(message); live('idle', 'Call ended');
   $('send').disabled = true; $('talk').disabled = true; $('hang-up').hidden = true; $('start').hidden = false;
   const record = callRecord(call); $('download').onclick = () => save(record); $('download').disabled = !call.messages.length;
