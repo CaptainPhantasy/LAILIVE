@@ -1,3 +1,4 @@
+import { createReceptionistSpeech } from '../lib/receptionist-voice.js';
 import { generateText, Output } from 'ai';
 import { createReceptionistHandler, receptionistInstructions, receptionistOutput } from '../lib/receptionist.js';
 import { getStore } from '../lib/concierge/database.js';
@@ -17,4 +18,4 @@ async function generate(input) {
   });
   return result.output;
 }
-export default { fetch: createReceptionistHandler({ generate, getStore }) };
+export default { fetch: createReceptionistHandler({ generate, getStore, generateSpeech: createReceptionistSpeech() }) };
