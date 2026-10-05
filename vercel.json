@@ -5,6 +5,14 @@
   "outputDirectory": ".vercel-static",
   "installCommand": "npm ci --ignore-scripts --no-audit --no-fund",
   "functions": {
+    "api/receptionist-agent.js": {
+      "maxDuration": 60,
+      "includeFiles": "lib/knowledge/**"
+    },
+    "api/receptionist-agent/[...path].js": {
+      "maxDuration": 60,
+      "includeFiles": "lib/knowledge/**"
+    },
     "api/board.js": {
       "maxDuration": 120
     },
