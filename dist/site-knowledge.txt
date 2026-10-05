@@ -817,81 +817,22 @@ The Standing Seat · always on, tuned to your industry
 
 # PAGE: AI receptionist test line (https://legacyai.space/receptionist/)
 
-Try it on your own business / Voice · Bilingual
+A short voice conversation
 
-## Call your new
+## Call our
 receptionist.
-Tell the receptionist about your business, then play the caller. Ask about prices, hours or an appointment — by voice or by typing, in English or Spanish — and see exactly what you would receive after the call.
+Ask how Legacy AI Solutions helps businesses answer missed calls, handle website inquiries and reduce office work.
 
-What is real here
+## What to expect
+The AI receptionist answers business questions and can repeat your callback details back to you. This demo does not book appointments, save requests or send messages to Douglas. To deliver a request, email douglas@legacyai.space .
+The call ends within 60 seconds. End it sooner with Hang up.
 
-## Real answers. No real bookings.
-Every reply is generated live from only the details you enter. When it does not know something, it says so and takes a message instead of guessing.
-Nothing is booked, texted or emailed. SignalWire processes typed dialogue or microphone audio to answer you; calls are not recorded. Your call record stays in this tab. Browser voice calls end after three minutes. Typing works without microphone access.
-In production the same receptionist answers your actual phone number and writes to your actual calendar.
+## Speak to the receptionist.
 
-01
+I understand that SignalWire processes my microphone audio to answer me. I will use sample details for this demo.
+Start voice call Hang up
 
-## Tell it about your business.
-The receptionist only knows what you write here. Leave something out and it will take a message about it.
-
-Business name
-What you do
-Business hours
-Area you serve Optional
-Services and prices One per line, such as “Drain cleaning — from $149”. Leave a price off and the receptionist will not quote one.
-Anything else callers ask about Optional: policies, payment, warranties, parking, what to bring.
-Languages it answers in English Spanish
-
-02
-
-## When can callers book?
-The receptionist offers only these open times and holds one for you to confirm. For your real calendar, see the booking calendar .
-
-Take messages only — do not offer appointments
-
-Days you take appointments
-
-First appointment
-Last appointment ends by
-Appointment length (minutes)
-Minimum notice (hours)
-
-03
-
-## Place a test call.
-You are the caller. Try a hard one: ask for a price you did not list, switch to Spanish halfway, or book a time and then change your mind.
-
-How would you like to talk? By typing By browser voice
-Start test call Hang up
-
-Ready
-
-What you say Say it
-
-## What you would receive
-
-Caller
-Listening…
-
-Callback
-—
-
-Reason
-—
-
-Appointment
-None yet
-
-Follow-up
-—
-
-Download call record
-
-From a test line to your phone number
-
-## Put it on your real line.
-Explore The Receptionist Who Never Calls In , pair it with missed-call text-backs , or find the right next step .
+Ready when you are.
 
 # PAGE: Booking calendar preview (https://legacyai.space/booking/)
 

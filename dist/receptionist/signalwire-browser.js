@@ -4,7 +4,7 @@ import { SignalWire, StaticCredentialProvider } from '@signalwire/js';
 // No project credentials, refresh token, recording or PSTN destination here.
 export async function startBrowserVoice({ access, audio, onTurn, onStatus, onError, signal, createClient = credentials => new SignalWire(new StaticCredentialProvider(credentials)) }) {
   const client = createClient({ token: access.token, expiry_at: access.expiresAt * 1000 });
-  const subscriptions = [], deadline = Math.min(access.expiresAt * 1000 - Date.now(), 180000);
+  const subscriptions = [], deadline = Math.min(access.expiresAt * 1000 - Date.now(), (access.maxCallSeconds || 180) * 1000);
   let call, timer, ownedStream, stopped = false;
   const stop = async () => {
     if (stopped) return;
@@ -20,7 +20,7 @@ export async function startBrowserVoice({ access, audio, onTurn, onStatus, onErr
   try {
     if (deadline <= 0 || signal?.aborted) throw new Error('expired');
     timer = setTimeout(() => { stop(); onStatus('disconnected'); }, deadline);
-    call = await client.dial(access.destination, { audio: true, video: false, receiveAudio: true, receiveVideo: false, userVariables: { receptionist_session: access.session } });
+    call = await client.dial(access.destination, { audio: true, video: false, receiveAudio: true, receiveVideo: false, preferredAudioCodecs: ['PCMU'], ...(access.session ? { userVariables: { receptionist_session: access.session } } : {}) });
     if (stopped) { try { await call.hangup(); } catch { /* stopped during dial */ } throw new Error('expired'); }
     subscriptions.push(call.remoteStream$.subscribe(stream => {
       if (!stream || stopped) return;
@@ -33,7 +33,7 @@ export async function startBrowserVoice({ access, audio, onTurn, onStatus, onErr
       onStatus(status);
     }));
     // The approved integration test must verify the v4 user_event envelope.
-    subscriptions.push(call.subscribe('user_event').subscribe(value => {
+    if (onTurn && access.session) subscriptions.push(call.subscribe('user_event').subscribe(value => {
       const event = value?.params?.event || value?.event || value;
       if (!stopped && event?.receptionist?.turn) onTurn(event.receptionist);
     }));
