@@ -6,7 +6,7 @@
   <meta name="description" content="Describe your business, then call a live AI receptionist by voice or text in English or Spanish. See the caller details and held appointment you would receive.">
   <link rel="canonical" href="https://legacyai.space/receptionist/">
   <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self'; media-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self' https://*.signalwire.com wss://*.signalwire.com; media-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
   <title>AI receptionist test line · Legacy AI Solutions</title>
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="LEGACY AI">
@@ -41,7 +41,7 @@
   <main id="main">
     <div class="ch-intro">
       <div><p class="ch-kicker">Try it on your own business / Voice · Bilingual</p><h1>Call your new<br>receptionist.</h1><p class="ch-dek">Tell the receptionist about your business, then play the caller. Ask about prices, hours or an appointment — by voice or by typing, in English or Spanish — and see exactly what you would receive after the call.</p></div>
-      <aside class="ch-note" aria-label="What happens on this test line"><p class="ch-kicker">What is real here</p><h2>Real answers. No real bookings.</h2><p>Every reply is generated live from only the details you enter. When it does not know something, it says so and takes a message instead of guessing.</p><p>Nothing is booked, texted or emailed, and your test call is not saved. Voice uses your browser’s own speech features; some browsers send microphone audio to their maker’s speech service. Typing works everywhere.</p><p class="ch-small">In production the same receptionist answers your actual phone number and writes to your actual calendar.</p></aside>
+      <aside class="ch-note" aria-label="What happens on this test line"><p class="ch-kicker">What is real here</p><h2>Real answers. No real bookings.</h2><p>Every reply is generated live from only the details you enter. When it does not know something, it says so and takes a message instead of guessing.</p><p>Nothing is booked, texted or emailed. SignalWire processes typed dialogue or microphone audio to answer you; calls are not recorded. Your call record stays in this tab. Browser voice calls end after three minutes. Typing works without microphone access.</p><p class="ch-small">In production the same receptionist answers your actual phone number and writes to your actual calendar.</p></aside>
     </div>
     <noscript><p class="ch-error">The test line needs JavaScript.</p></noscript>
     <section class="ch-panel" aria-labelledby="business-heading">
@@ -70,6 +70,7 @@
     </section>
     <section class="ch-panel" aria-labelledby="call-heading">
       <div class="ch-step"><span aria-hidden="true">03</span><div><h2 id="call-heading" tabindex="-1">Place a test call.</h2><p>You are the caller. Try a hard one: ask for a price you did not list, switch to Spanish halfway, or book a time and then change your mind.</p></div></div>
+      <label>How would you like to talk?<select id="channel"><option value="text">By typing</option><option value="voice">By browser voice</option></select></label>
       <div class="ch-actions"><button id="start" type="button">Start test call</button><button id="hang-up" class="ch-secondary" type="button" hidden>Hang up</button></div>
       <p id="status" class="ch-status" role="status" aria-live="polite"></p><p id="error" class="ch-error" role="alert" hidden></p>
       <div id="call" class="tl-call" hidden>
@@ -77,7 +78,7 @@
           <p><span id="live" class="tl-live" data-state="idle">Ready</span></p>
           <ol id="log" class="tl-log" aria-label="Call transcript" aria-live="polite"></ol>
           <form id="say-form" class="tl-say"><label>What you say<textarea id="say" rows="2" maxlength="1200" autocomplete="off"></textarea></label><button id="send" type="submit">Say it</button></form>
-          <div class="ch-actions"><button id="talk" class="ch-secondary" type="button" aria-pressed="false" hidden>Talk with your voice</button><label class="ch-check"><input id="speak" type="checkbox" checked><span>Read replies aloud</span></label></div>
+          <audio id="voice-audio" controls autoplay hidden aria-label="Receptionist call audio"></audio>
         </div>
         <div class="tl-card" aria-labelledby="owner-heading">
           <h3 id="owner-heading">What you would receive</h3>

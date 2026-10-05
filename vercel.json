@@ -17,6 +17,12 @@
     "api/receptionist.js": {
       "maxDuration": 60
     },
+    "api/receptionist-session.js": {
+      "maxDuration": 60
+    },
+    "api/receptionist-swml.js": {
+      "maxDuration": 60
+    },
     "api/assistant/notify.js": {
       "maxDuration": 30
     }

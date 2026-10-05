@@ -1,21 +1,11 @@
-import { createReceptionistSpeech } from '../lib/receptionist-voice.js';
-import { generateText, Output } from 'ai';
-import { createReceptionistHandler, receptionistInstructions, receptionistOutput } from '../lib/receptionist.js';
+import { createReceptionistHandler } from '../lib/receptionist.js';
 import { getStore } from '../lib/concierge/database.js';
-import { createAppGateway } from '../lib/gateway.js';
-import { model } from '../lib/concierge/config.js';
-import { HttpError } from '../lib/concierge/contracts.js';
+import { createSignalWireReceptionist } from '../lib/receptionist-signalwire.js';
 
-const gateway = createAppGateway();
-async function generate(input) {
-  if (!process.env.VERCEL && !process.env.AI_GATEWAY_API_KEY && !process.env.VERCEL_OIDC_TOKEN) throw new HttpError(503, 'The receptionist is not connected yet. Please try again later.');
-  const messages = input.messages.map(m => ({ role: m.role === 'caller' ? 'user' : 'assistant', content: m.content }));
-  const result = await generateText({
-    model: gateway(process.env.RECEPTIONIST_MODEL || model), maxOutputTokens: 700, maxRetries: 0, timeout: 30000,
-    instructions: receptionistInstructions(input),
-    ...(messages.length ? { messages } : { prompt: '(The phone is ringing. Answer it.)' }),
-    output: Output.object({ schema: receptionistOutput }),
-  });
-  return result.output;
-}
-export default { fetch: createReceptionistHandler({ generate, getStore, generateSpeech: createReceptionistSpeech() }) };
+const signalwire = createSignalWireReceptionist();
+const handler = createReceptionistHandler({ generate: signalwire.generate, getStore });
+export default { fetch: async request => {
+  try { signalwire.assertPreview(request); }
+  catch { return Response.json({ error: 'This preview test line is not connected yet.' }, { status: 503, headers: { 'Cache-Control': 'no-store' } }); }
+  return handler(request);
+} };

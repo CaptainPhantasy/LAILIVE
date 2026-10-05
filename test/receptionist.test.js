@@ -9,6 +9,7 @@ const slots = [{ id: '20261005T0900', label: 'Monday, October 5, 9:00 AM–10:00
 const body = (extra = {}) => JSON.stringify({ profile, slots, messages: [{ role: 'caller', content: 'Can I book a drain cleaning?' }], ...extra });
 const req = (headers = {}, payload = body()) => new Request('https://example.test/api/receptionist', { method: 'POST', headers: { 'content-type': 'application/json', ...headers }, body: payload });
 const turn = (over = {}) => ({ reply: 'Sure — I have Monday at nine. May I have your name?', language: 'en', caller: { name: '', callback: '', reason: 'Drain cleaning' }, booking: { slotId: '20261005T0900', status: 'offered' }, followUp: '', endCall: false, ...over });
+const acceptedHoldInput = (name = 'Ann') => receptionistInput.parse(JSON.parse(body({ messages: [{ role: 'receptionist', content: `I can offer ${slots[0].label}. Would you like me to hold it?` }, { role: 'caller', content: `Yes, please hold it. I am ${name}, callback 555-0100.` }] })));
 const granted = { getInquiry: async () => ({ consent: [{ purpose: 'inquiry-reply', choice: 'granted' }] }), consumeLimits: async () => {} };
 
 test('the test line refuses calls without a received inquiry before generating', async () => {
@@ -58,7 +59,7 @@ test('invented times are dropped and a hold needs a name and callback number', (
   assert.equal(missingDetails.booking.status, 'offered');
   assert.match(missingDetails.reply, /your name and callback number/i);
   assert.doesNotMatch(missingDetails.reply, /you are booked/i);
-  const held = groundTurn(turn({ reply: 'Your confirmation has been sent.', booking: { slotId: '20261005T0900', status: 'held' }, caller: { name: 'Ann', callback: '555-0100', reason: 'x' } }), input);
+  const held = groundTurn(turn({ reply: 'Your confirmation has been sent.', booking: { slotId: '20261005T0900', status: 'held' }, caller: { name: 'Ann', callback: '555-0100', reason: 'x' } }), acceptedHoldInput());
   assert.equal(held.booking.status, 'held');
   assert.match(held.reply, /Monday, October 5, 9:00 AM–10:00 AM/);
   assert.match(held.reply, /business to confirm/);
@@ -117,12 +118,12 @@ test('booking replies use the validated status, including contradictory none met
     assert.equal(value.endCall, false, 'a correction requesting details keeps the call open');
   }
   for (const [name, callback, missing] of [['', '555-0100', /your name/], ['Ann', ' ', /your callback number/]]) {
-    const value = groundTurn(turn({ caller: { ...caller, name, callback }, booking: { slotId: slots[0].id, status: 'held' } }), input);
+    const value = groundTurn(turn({ caller: { ...caller, name, callback }, booking: { slotId: slots[0].id, status: 'held' } }), { ...input, messages: [{ role: 'caller', content: `My name is ${name}, callback ${callback}.` }] });
     assert.equal(value.booking.status, 'offered');
     assert.match(value.reply, missing);
     assert.doesNotMatch(value.reply, /I have .* held/);
   }
-  const offered = groundTurn(turn({ caller, reply: 'I booked Friday and emailed you.' }), input);
+  const offered = groundTurn(turn({ caller, reply: 'I booked Friday and emailed you.' }), { ...input, messages: [{ role: 'caller', content: 'I am Ann, callback 555-0100.' }] });
   assert.equal(offered.booking.status, 'offered');
   assert.match(offered.reply, /Would you like/);
   assert.match(offered.reply, /Monday, October 5/);
@@ -145,7 +146,7 @@ test('false confirmations cannot escape through none booking metadata in either 
 
 test('Spanish booking wording follows validated state and language fallback', () => {
   const input = receptionistInput.parse(JSON.parse(body()));
-  const value = groundTurn(turn({ language: 'es', reply: 'Su cita está confirmada.', booking: { slotId: slots[0].id, status: 'held' }, caller: { name: 'Ana', callback: '555-0100', reason: 'x' } }), input);
+  const value = groundTurn(turn({ language: 'es', reply: 'Su cita está confirmada.', booking: { slotId: slots[0].id, status: 'held' }, caller: { name: 'Ana', callback: '555-0100', reason: 'x' } }), acceptedHoldInput('Ana'));
   assert.equal(value.booking.status, 'held');
   assert.match(value.reply, /negocio lo confirme/);
   assert.match(value.reply, /Monday, October 5/);
@@ -155,12 +156,12 @@ test('Spanish booking wording follows validated state and language fallback', ()
   assert.match(fallback.reply, /I can offer/);
 });
 
-test('non-booking greetings and business answers retain their model reply', () => {
+test('greeting and business answers use only supplied facts, never model prose', () => {
   const input = receptionistInput.parse(JSON.parse(body()));
-  for (const reply of ['Hello, Acme Plumbing. How can I help?', 'Drain cleaning starts at $149. What is your name?', 'For immediate danger, hang up and call 911.']) {
-    const value = groundTurn(turn({ reply, booking: { slotId: null, status: 'none' } }), input);
-    assert.equal(value.reply, reply);
-  }
+  const value = groundTurn(turn({ reply: 'Your Friday time is yours.', topic: 'price', serviceName: 'Drain cleaning', booking: { slotId: null, status: 'none' } }), input);
+  assert.match(value.reply, /Drain cleaning: from \$149/);
+  assert.doesNotMatch(value.reply, /Friday|is yours/);
+  assert.match(groundTurn(turn({ booking: { slotId: null, status: 'none' } }), { ...input, messages: [] }).reply, /Thank you for calling Acme Plumbing/);
 });
 
 test('the API returns the safe reply used by the transcript, speech and call record', async () => {

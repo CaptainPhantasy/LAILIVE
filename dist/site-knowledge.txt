@@ -827,7 +827,7 @@ What is real here
 
 ## Real answers. No real bookings.
 Every reply is generated live from only the details you enter. When it does not know something, it says so and takes a message instead of guessing.
-Nothing is booked, texted or emailed, and your test call is not saved. Voice uses your browser’s own speech features; some browsers send microphone audio to their maker’s speech service. Typing works everywhere.
+Nothing is booked, texted or emailed. SignalWire processes typed dialogue or microphone audio to answer you; calls are not recorded. Your call record stays in this tab. Browser voice calls end after three minutes. Typing works without microphone access.
 In production the same receptionist answers your actual phone number and writes to your actual calendar.
 
 01
@@ -862,12 +862,12 @@ Minimum notice (hours)
 ## Place a test call.
 You are the caller. Try a hard one: ask for a price you did not list, switch to Spanish halfway, or book a time and then change your mind.
 
+How would you like to talk? By typing By browser voice
 Start test call Hang up
 
 Ready
 
 What you say Say it
-Talk with your voice Read replies aloud
 
 ## What you would receive
 

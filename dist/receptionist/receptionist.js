@@ -4,9 +4,8 @@ import { requestLead } from '../lead-gate.js';
 
 const $ = id => document.getElementById(id);
 const node = (tag, text, cls) => { const el = document.createElement(tag); if (text !== undefined) el.textContent = text; if (cls) el.className = cls; return el; };
-const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-let playingAudio = null;
-let receipt = null, call = null, busy = false, recognizer = null, listening = false;
+let receipt = null, call = null, busy = false;
+let voice = null;
 
 for (const [index, name] of DAY_NAMES.entries()) {
   const label = node('label'), box = document.createElement('input');
@@ -38,7 +37,7 @@ function profile() {
 
 function renderOwner() {
   const turn = call?.turn;
-  $('o-name').textContent = turn?.caller.name || (call?.messages.length ? 'Not given yet' : 'Listening…');
+  $('o-name').textContent = turn?.caller.name || (call?.messages.length || call?.endedAt ? 'Not given yet' : 'Listening…');
   $('o-callback').textContent = turn?.caller.callback || '—';
   $('o-reason').textContent = turn?.caller.reason || '—';
   const slot = turn?.booking.slotId && call.slots.find(s => s.id === turn.booking.slotId);
@@ -52,59 +51,30 @@ function addLine(role, content) {
   $('log').append(item); $('log').scrollTop = $('log').scrollHeight;
 }
 
-function stopSpeaking() {
-  if (!playingAudio) return;
-  const { audio, finish } = playingAudio;
-  audio.pause(); finish();
-}
-
-function speak(value) {
-  if (!$('speak').checked) return Promise.resolve();
-  if (!value.audio) {
-    error(value.voiceError || 'The ElevenLabs voice is unavailable. You can keep typing.');
-    return Promise.resolve();
-  }
-  stopSpeaking();
-  return new Promise(resolve => {
-    const bytes = Uint8Array.from(atob(value.audio.base64), char => char.charCodeAt(0));
-    const audioUrl = URL.createObjectURL(new Blob([bytes], { type: 'audio/mpeg' }));
-    const audio = new Audio(audioUrl);
-    const finish = () => {
-      audio.onended = audio.onerror = null;
-      URL.revokeObjectURL(audioUrl);
-      if (playingAudio?.audio === audio) playingAudio = null;
-      resolve();
-    };
-    playingAudio = { audio, finish };
-    audio.onended = finish;
-    audio.onerror = () => { error('Voice playback failed. You can keep typing.'); finish(); };
-    live('speaking', 'Receptionist speaking…');
-    audio.play().catch(() => { error('Your browser blocked voice playback. You can keep typing.'); finish(); });
-  });
-}
-
 async function turn() {
   if (!call || busy) return;
-  busy = true; $('send').disabled = true; $('talk').disabled = true; error(); live('thinking', 'Receptionist answering…');
+  const active = call;
+  busy = true; $('send').disabled = true; error(); live('thinking', 'Receptionist answering…');
   const controller = new AbortController(), timeout = setTimeout(() => controller.abort(), 40000);
   try {
-    const response = await fetch('/api/receptionist', { method: 'POST', signal: controller.signal, credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-Legacy-Inquiry': receipt.id }, body: JSON.stringify({ profile: call.profile, slots: call.slots, messages: call.messages, speak: $('speak').checked }) });
+    const response = await fetch('/api/receptionist', { method: 'POST', signal: controller.signal, credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-Legacy-Inquiry': receipt.id }, body: JSON.stringify({ profile: call.profile, slots: call.slots, messages: call.messages, speak: false }) });
     let value; try { value = await response.json(); } catch { throw new Error('The receptionist did not return a readable reply. Please try again.'); }
     if (!response.ok) throw new Error(typeof value?.error === 'string' ? value.error : 'The receptionist could not answer. Please try again.');
     if (typeof value?.reply !== 'string' || !value.caller || !value.booking) throw new Error('The receptionist returned an incomplete reply. Please try again.');
+    if (call !== active) return;
     call.turn = value; call.language = value.language; call.messages.push({ role: 'receptionist', content: value.reply });
     addLine('receptionist', value.reply); renderOwner();
-    await speak(value);
     if (value.endCall) return finish('The caller said goodbye. Here is what you would receive.');
     live('idle', 'Your turn to speak');
   } catch (e) {
+    if (call !== active) return;
     // Undo an unanswered caller line so a retry does not send it twice.
-    if (call?.messages.at(-1)?.role === 'caller') { const last = call.messages.pop(); $('say').value = last.content; $('log').lastElementChild?.remove(); }
+    if (call === active && call?.messages.at(-1)?.role === 'caller') { const last = call.messages.pop(); $('say').value = last.content; $('log').lastElementChild?.remove(); }
     error(e.name === 'AbortError' ? 'The receptionist took too long to answer. Please try again.' : e.message); live('idle', 'Waiting');
     if (!call?.messages.length) $('start').hidden = false;
   } finally {
-    clearTimeout(timeout); busy = false;
-    if (call) { $('send').disabled = false; $('talk').disabled = false; }
+    clearTimeout(timeout);
+    if (call === active) { busy = false; $('send').disabled = false; }
   }
 }
 
@@ -117,30 +87,32 @@ function say(text) {
 $('say-form').addEventListener('submit', event => { event.preventDefault(); say($('say').value); });
 $('say').addEventListener('keydown', event => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); say($('say').value); } });
 
-// Voice input is an enhancement: when recognition is missing or blocked, typing continues.
-if (Recognition) {
-  $('talk').hidden = false;
-  $('talk').addEventListener('click', () => {
-    if (listening) { recognizer?.stop(); return; }
-    if (!call || busy) return;
-    stopSpeaking();
-    recognizer = new Recognition();
-    recognizer.lang = call.language === 'es' ? 'es-US' : 'en-US';
-    recognizer.interimResults = true; recognizer.maxAlternatives = 1; recognizer.continuous = false;
-    let finalText = '';
-    recognizer.onresult = event => {
-      let interim = '';
-      for (let i = event.resultIndex; i < event.results.length; i++) (event.results[i].isFinal ? (finalText += event.results[i][0].transcript) : (interim += event.results[i][0].transcript));
-      $('say').value = (finalText + interim).trim();
-    };
-    recognizer.onerror = event => {
-      if (event.error === 'not-allowed' || event.error === 'service-not-allowed') { $('talk').hidden = true; error('Microphone access is off for this page. You can keep typing.'); }
-      else if (event.error !== 'no-speech' && event.error !== 'aborted') error('Voice input stopped. You can try again or type instead.');
-    };
-    recognizer.onend = () => { listening = false; $('talk').setAttribute('aria-pressed', 'false'); $('talk').textContent = 'Talk with your voice'; if (!busy) live('idle', 'Your turn to speak'); if (finalText.trim()) say(finalText); };
-    try { recognizer.start(); listening = true; $('talk').setAttribute('aria-pressed', 'true'); $('talk').textContent = 'Stop listening'; live('listening', `Listening${recognizer.lang.startsWith('es') ? ' (español)' : ''}…`); }
-    catch { listening = false; error('Voice input could not start. You can type instead.'); }
+async function startVoice(active) {
+  const response = await fetch('/api/receptionist-session', { method: 'POST', signal: active.controller.signal, credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'X-Legacy-Inquiry': receipt.id }, body: JSON.stringify({ profile: active.profile, slots: active.slots, messages: [] }) });
+  const access = await response.json();
+  if (!response.ok) throw new Error(access.error || 'Browser voice is unavailable.');
+  if (call !== active) return;
+  const { startBrowserVoice } = await import('./signalwire-browser.js');
+  if (call !== active) return;
+  const connection = await startBrowserVoice({ access, audio: $('voice-audio'), signal: active.controller.signal, onError: message => { if (call === active) error(message); },
+    onStatus: state => {
+      if (call !== active) return;
+      live(state === 'connected' ? 'listening' : 'idle', state === 'connected' ? 'Speak to the receptionist' : state);
+      if (['disconnected', 'failed', 'destroyed'].includes(state)) finish(state === 'failed' ? 'The voice connection ended. Choose typing to start another conversation.' : 'The browser voice call ended. Here is the checked call record.');
+    },
+    onTurn: event => {
+      if (call !== active || event.step <= active.lastStep) return;
+      const value = event.turn;
+      if (typeof value?.reply !== 'string' || !value.caller || !value.booking) return;
+      active.lastStep = event.step;
+      if (event.caller) { active.messages.push({ role: 'caller', content: event.caller }); addLine('caller', event.caller); }
+      active.turn = value; active.language = value.language;
+      active.messages.push({ role: 'receptionist', content: value.reply });
+      addLine('receptionist', value.reply); renderOwner();
+    },
   });
+  if (call !== active) await connection.stop();
+  else voice = connection;
 }
 
 $('start').addEventListener('click', async () => {
@@ -150,22 +122,29 @@ $('start').addEventListener('click', async () => {
   try { details = profile(); slots = currentSlots(); } catch (e) { error(e.message); return; }
   $('start').disabled = true;
   try {
-    receipt = receipt || await requestLead({ key: 'receptionist-test-line', purpose: 'AI receptionist inquiry', serviceIds: ['the-receptionist-who-never-calls-in', 'the-live-booking-calendar'], title: 'Where should Douglas follow up?', intro: 'Tell Douglas about the calls your business misses or struggles with. Once your inquiry is received, your test line opens here.', request: '', localNote: 'Only these contact details and your request are sent to Douglas. Your test call is not saved, and nothing is booked or sent to a customer.' });
+    receipt = receipt || await requestLead({ key: 'receptionist-test-line', purpose: 'AI receptionist inquiry', serviceIds: ['the-receptionist-who-never-calls-in', 'the-live-booking-calendar'], title: 'Where should Douglas follow up?', intro: 'Tell Douglas about the calls your business misses or struggles with. Once your inquiry is received, your test line opens here.', request: '', localNote: 'These contact details and your request are sent to Douglas. SignalWire processes your test dialogue or microphone audio to answer you. Calls are not recorded, and nothing is booked or sent to a customer.' });
   } catch (e) { error(e.message); }
   $('start').disabled = false;
   if (!receipt) { status('Send an inquiry when you are ready to place a test call.'); return; }
-  stopSpeaking(); $('log').replaceChildren(); $('download').onclick = null;
-  call = { profile: details, slots, messages: [], turn: null, language: details.languages[0], startedAt: new Date() };
+  $('log').replaceChildren(); $('download').onclick = null;
+  call = { profile: details, slots, messages: [], turn: null, language: details.languages[0], startedAt: new Date(), channel: $('channel').value, lastStep: -1, controller: new AbortController() };
+  const active = call;
   $('call').hidden = false; $('start').hidden = true; $('hang-up').hidden = false; $('start').textContent = 'Start a new test call';
   status(`Inquiry received (${receipt.id}). Your test line is ringing.`); renderOwner(); $('call-heading').focus();
-  await turn();
+  $('say-form').hidden = call.channel === 'voice'; $('voice-audio').hidden = call.channel !== 'voice';
+  $('send').disabled = false;
+  if (call.channel === 'voice') {
+    try { await startVoice(active); } catch (e) { if (call === active) { error(e.message); finish('Voice did not connect. Choose typing to start another conversation.'); } }
+  } else await turn();
 });
 
 function finish(message) {
   if (!call) return;
-  recognizer?.abort(); stopSpeaking();
+  call.controller.abort(); busy = false;
+  voice?.stop(); voice = null;
   call.endedAt = new Date(); status(message); live('idle', 'Call ended');
-  $('send').disabled = true; $('talk').disabled = true; $('hang-up').hidden = true; $('start').hidden = false;
+  $('voice-audio').hidden = true; renderOwner();
+  $('send').disabled = true; $('hang-up').hidden = true; $('start').hidden = false;
   const record = callRecord(call); $('download').onclick = () => save(record); $('download').disabled = !call.messages.length;
   call = null;
 }
