@@ -817,22 +817,22 @@ The Standing Seat · always on, tuned to your industry
 
 # PAGE: AI receptionist test line (https://legacyai.space/receptionist/)
 
-A short voice conversation
+The Legacy AI receptionist
 
-## Call our
-receptionist.
-Ask how Legacy AI Solutions helps businesses answer missed calls, handle website inquiries and reduce office work.
+## Call your
+AI receptionist.
+Ask how Legacy AI helps businesses answer missed calls, handle website inquiries and reduce office work.
 
 ## What to expect
-The AI receptionist answers business questions and can repeat your callback details back to you. This demo does not book appointments, save requests or send messages to Douglas. To deliver a request, email douglas@legacyai.space .
+The Legacy AI receptionist answers business questions and can repeat your callback details back to you. Booking and message delivery are not connected in this demo. Details you say are not forwarded to Douglas or saved in the Legacy AI inbox. To deliver a request, email douglas@legacyai.space .
 The call ends within 60 seconds. End it sooner with Hang up.
 
-## Speak to the receptionist.
+## Speak to Legacy AI.
 
-I understand that SignalWire processes my microphone audio to answer me. I will use sample details for this demo.
-Start voice call Hang up
+I agree to let the Legacy AI receptionist process my microphone audio to answer me. I will use sample details for this demo.
+Call Legacy AI Hang up
 
-Ready when you are.
+Ready to call Legacy AI.
 
 # PAGE: Booking calendar preview (https://legacyai.space/booking/)
 

@@ -40,6 +40,6 @@ export async function startBrowserVoice({ access, audio, onTurn, onStatus, onErr
     return { stop };
   } catch {
     await stop();
-    throw new Error('Browser voice could not connect. You can start a typed conversation.');
+    throw new Error('The Legacy AI receptionist could not connect. Refresh this page and try again.');
   }
 }

@@ -12,7 +12,7 @@ start.addEventListener('click', async () => {
   if (!consent.checked) { error.textContent = 'Review the notice and check the box to start.'; return; }
   start.disabled = true; consent.disabled = true; error.textContent = '';
   const attempt = { controller: new AbortController() }; active = attempt;
-  hangup.hidden = false; audio.hidden = false; status.textContent = 'Connecting…';
+  hangup.hidden = false; audio.hidden = false; status.textContent = 'Connecting to Legacy AI…';
   try {
     const response = await fetch('/api/receptionist-session', { method: 'POST', credentials: 'same-origin', signal: attempt.controller.signal, headers: { 'content-type': 'application/json' }, body: JSON.stringify({ consent: true }) });
     const access = await response.json();
@@ -24,9 +24,9 @@ start.addEventListener('click', async () => {
       onError: message => { if (active === attempt) error.textContent = message; },
       onStatus: state => {
         if (active !== attempt) return;
-        if (state === 'connected') status.textContent = 'Connected. Speak to the receptionist.';
-        else if (['disconnected', 'failed', 'destroyed'].includes(state)) finish(attempt, state === 'failed' ? 'The voice connection failed.' : 'Call ended.');
-        else status.textContent = `Call: ${state}`;
+        if (state === 'connected') status.textContent = 'Connected to Legacy AI. Speak to the receptionist.';
+        else if (['disconnected', 'failed', 'destroyed'].includes(state)) finish(attempt, state === 'failed' ? 'The Legacy AI call did not connect.' : 'Call ended.');
+        else status.textContent = 'Connecting to Legacy AI…';
       },
     });
     if (active !== attempt) await connection.stop(); else attempt.connection = connection;

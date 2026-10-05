@@ -122,7 +122,7 @@ $('start').addEventListener('click', async () => {
   try { details = profile(); slots = currentSlots(); } catch (e) { error(e.message); return; }
   $('start').disabled = true;
   try {
-    receipt = receipt || await requestLead({ key: 'receptionist-test-line', purpose: 'AI receptionist inquiry', serviceIds: ['the-receptionist-who-never-calls-in', 'the-live-booking-calendar'], title: 'Where should Douglas follow up?', intro: 'Tell Douglas about the calls your business misses or struggles with. Once your inquiry is received, your test line opens here.', request: '', localNote: 'These contact details and your request are sent to Douglas. SignalWire processes your test dialogue or microphone audio to answer you. Calls are not recorded, and nothing is booked or sent to a customer.' });
+    receipt = receipt || await requestLead({ key: 'receptionist-test-line', purpose: 'AI receptionist inquiry', serviceIds: ['the-receptionist-who-never-calls-in', 'the-live-booking-calendar'], title: 'Where should Douglas follow up?', intro: 'Tell Douglas about the calls your business misses or struggles with. Once your inquiry is received, your test line opens here.', request: '', localNote: 'These contact details and your request are sent to Douglas. The Legacy AI receptionist processes your test dialogue or microphone audio to answer you. Calls are not recorded, and nothing is booked or sent to a customer.' });
   } catch (e) { error(e.message); }
   $('start').disabled = false;
   if (!receipt) { status('Send an inquiry when you are ready to place a test call.'); return; }
