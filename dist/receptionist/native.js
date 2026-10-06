@@ -1,11 +1,14 @@
+import { startBrowserVoice } from './signalwire-browser.js';
+
 const start = document.getElementById('start'), hangup = document.getElementById('hang-up');
 const status = document.getElementById('status'), error = document.getElementById('error');
 const audio = document.getElementById('voice-audio'), consent = document.getElementById('consent');
 let active;
 function finish(attempt, message) {
   if (active !== attempt) return;
-  active = undefined; attempt.controller.abort(); attempt.connection?.stop();
+  active = undefined; start.disabled = false; consent.disabled = false;
   hangup.hidden = true; status.textContent = message;
+  attempt.controller.abort(); attempt.connection?.stop();
 }
 start.addEventListener('click', async () => {
   if (active || start.disabled) return;
@@ -17,8 +20,6 @@ start.addEventListener('click', async () => {
     const response = await fetch('/api/receptionist-session', { method: 'POST', credentials: 'same-origin', signal: attempt.controller.signal, headers: { 'content-type': 'application/json' }, body: JSON.stringify({ consent: true }) });
     const access = await response.json();
     if (!response.ok) throw new Error(access.error || 'Voice access could not be created.');
-    if (active !== attempt) return;
-    const { startBrowserVoice } = await import('./signalwire-browser.js');
     if (active !== attempt) return;
     const connection = await startBrowserVoice({ access, audio, signal: attempt.controller.signal,
       onError: message => { if (active === attempt) error.textContent = message; },

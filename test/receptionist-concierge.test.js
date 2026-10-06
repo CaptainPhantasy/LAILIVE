@@ -29,7 +29,7 @@ test('actual prefab preserves all knowledge and Alloy; no fictitious hours or su
   assert.equal(createHash('sha256').update(source).digest('hex'), KNOWLEDGE_SHA256);
   const swml = JSON.parse(agent.renderSwml(randomUUID()));
   const ai = aiOf(swml);
-  assert.equal(swml.sections.main.find(verb => verb.answer).answer.max_duration, 60);
+  assert.equal(swml.sections.main.find(verb => verb.answer).answer.max_duration, undefined, 'leave the provider maximum in place');
   assert.equal(ai.languages.length, 2);
   assert.ok(ai.languages.every(language => language.voice === 'openai.alloy'));
   assert.equal(ai.post_prompt_url, undefined);
@@ -43,6 +43,22 @@ test('HTTP agent enforces existing authentication and rejects Production', async
   assert.equal((await handler(request(`${origin}${AGENT_ROUTE}`))).status, 200);
   const production = createConciergeFetch({ env: { ...env, VERCEL_ENV: 'production' } });
   assert.equal((await production(request(`${origin}${AGENT_ROUTE}`))).status, 503);
+});
+
+test('punctuation in the webhook password survives signed tool URL construction', async () => {
+  const password = 'synthetic:@/%&+?= #punctuation-characters';
+  const agent = await createLegacyConciergeAgent({ ...options(() => assert.fail('No database access expected')), webhookSecret: password });
+  const callId = randomUUID(), ai = aiOf(JSON.parse(agent.renderSwml(callId)));
+  const url = new URL(ai.SWAIG.functions.find(fn => fn.function === 'search_legacy_ai_knowledge').web_hook_url);
+  assert.equal(url.origin, origin);
+  assert.equal(url.pathname, `${AGENT_ROUTE}/swaig`);
+  assert.equal(decodeURIComponent(url.username), 'receptionist');
+  assert.equal(decodeURIComponent(url.password), password);
+  const auth = `Basic ${Buffer.from(`${decodeURIComponent(url.username)}:${decodeURIComponent(url.password)}`).toString('base64')}`;
+  url.username = ''; url.password = '';
+  const response = await agent.getApp().fetch(new Request(url.href, { method: 'POST', headers: { authorization: auth, 'content-type': 'application/json' }, body: JSON.stringify(toolCall('search_legacy_ai_knowledge', callId, { query: 'Legacy AI', count: 1 })) }));
+  assert.equal(response.status, 200);
+  assert.match((await response.json()).response, /Legacy AI/);
 });
 
 test('knowledge and truthful availability run through signed SDK HTTP tools across instances', async () => {

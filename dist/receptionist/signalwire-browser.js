@@ -1,14 +1,14 @@
 import { SignalWire, StaticCredentialProvider } from '@signalwire/js';
 
-// Imported only after the visitor explicitly chooses to start a voice call.
+// A client is created only after the visitor explicitly starts a voice call.
 // No project credentials, refresh token, recording or PSTN destination here.
 export async function startBrowserVoice({ access, audio, onTurn, onStatus, onError, signal, createClient = credentials => new SignalWire(new StaticCredentialProvider(credentials)) }) {
   const client = createClient({ token: access.token, expiry_at: access.expiresAt * 1000 });
-  const subscriptions = [], deadline = Math.min(access.expiresAt * 1000 - Date.now(), (access.maxCallSeconds || 180) * 1000);
-  let call, timer, ownedStream, stopped = false;
+  const subscriptions = [];
+  let call, ownedStream, stopped = false;
   const stop = async () => {
     if (stopped) return;
-    stopped = true; clearTimeout(timer);
+    stopped = true;
     signal?.removeEventListener('abort', abort);
     for (const subscription of subscriptions) subscription.unsubscribe();
     if (ownedStream && audio.srcObject === ownedStream) { audio.pause(); audio.srcObject = null; }
@@ -18,8 +18,7 @@ export async function startBrowserVoice({ access, audio, onTurn, onStatus, onErr
   const abort = () => { stop(); };
   signal?.addEventListener('abort', abort, { once: true });
   try {
-    if (deadline <= 0 || signal?.aborted) throw new Error('expired');
-    timer = setTimeout(() => { stop(); onStatus('disconnected'); }, deadline);
+    if (access.expiresAt * 1000 <= Date.now() || signal?.aborted) throw new Error('expired');
     call = await client.dial(access.destination, { audio: true, video: false, receiveAudio: true, receiveVideo: false, preferredAudioCodecs: ['PCMU'], ...(access.session ? { userVariables: { receptionist_session: access.session } } : {}) });
     if (stopped) { try { await call.hangup(); } catch { /* stopped during dial */ } throw new Error('expired'); }
     subscriptions.push(call.remoteStream$.subscribe(stream => {
