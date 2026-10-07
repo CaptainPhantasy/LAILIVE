@@ -39,7 +39,7 @@ Legacy AI is led by founder Douglas Talley and based in Brown County, Indiana. E
 - [The Deal](${site}/deal/): Five steps from a 30-minute call to launch and ongoing improvement, plus the six industries already served.
 - [The Board](${site}/board/): Five AI advisor perspectives examine one business decision — recommendation, dissent, risks, next steps.
 - [Contact-list health check](${site}/contact-health/): A browser tool that reviews a customer CSV for missing details, duplicate rows and conflicting contact information.
-- [AI receptionist test line](${site}/receptionist/): Describe a business, then call an AI receptionist by voice or text in English or Spanish; it answers only from those details, captures the caller and holds an open time.
+- [Darla, the Legacy AI receptionist](${site}/receptionist/): The receptionist who never calls in works here, too. Meet Darla: call Legacy AI at 812-412-3454 and hear her in action.
 - [Live booking calendar preview](${site}/booking/): Turns business hours, buffers and an existing .ics calendar into the open times customers would be offered, on the visitor's device.
 - [Missed-call text-back builder](${site}/missed-call/): Drafts missed-call text-backs in English and Spanish with SMS segment counts and carrier-friendly checks.
 
@@ -50,7 +50,7 @@ Legacy AI is led by founder Douglas Talley and based in Brown County, Indiana. E
 
 ## Contact
 - Email: douglas@legacyai.space
-- Phone: (812) 302-2525
+- Phone: 812-412-3454
 - Site: ${site}
 - Field guide (PDF): ${site}/catalog.pdf
 
@@ -85,7 +85,7 @@ ${catalog.services.map(s => `- ${s.name} (${s.tag}): ${s.body}`).join('\n')}
 - The Deal: ${site}/deal/
 - The Board: ${site}/board/
 - Contact-list health check: ${site}/contact-health/
-- AI receptionist test line: ${site}/receptionist/
+- Darla, the Legacy AI receptionist: ${site}/receptionist/
 - Live booking calendar preview: ${site}/booking/
 - Missed-call text-back builder: ${site}/missed-call/
 
@@ -96,7 +96,7 @@ ${catalog.services.map(s => `- ${s.name} (${s.tag}): ${s.body}`).join('\n')}
 
 ## Contact
 - Email: douglas@legacyai.space
-- Phone: (812) 302-2525
+- Phone: 812-412-3454
 - Site: ${site}
 - Field guide (PDF): ${site}/catalog.pdf
 `;
