@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { PGlite } from '@electric-sql/pglite';
 import { drizzle } from 'drizzle-orm/pglite';
 import { createOwnerMailer } from '../lib/assistant.js';
-import { createFrontdeskHandler, createOwnerTexter, composeFrontdeskMessage, composeFrontdeskText, readFrontdeskMessage, OWNER_ADDRESSES, OWNER_NUMBER } from '../lib/frontdesk.js';
+import { createFrontdeskHandler, createOwnerTexter, composeFrontdeskMessage, composeFrontdeskText, readFrontdeskMessage, OWNER_ADDRESSES, OWNER_NUMBER, OWNER_VTEXT_ADDRESS } from '../lib/frontdesk.js';
 
 // SignalWire's post_conversation payload as the receptionist sends it. No secret,
 // database, mail provider or messaging provider is contacted: every outbound call
@@ -117,7 +117,7 @@ test('a call is stored as a phone message, emailed to both owner addresses and t
   const response = await h.message(request(callPayload({ to: 'someone.else@example.test', recipient: 'someone.else@example.test' })));
   assert.equal(response.status, 200);
   assert.deepEqual(await response.json(), {
-    ok: true, stored: true, emailed: [...OWNER_ADDRESSES], texted: true, duplicate: false, callId: 'call-abc',
+    ok: true, stored: true, emailed: [...OWNER_ADDRESSES], texted: true, textVia: 'signalwire', duplicate: false, callId: 'call-abc',
     message: 'Douglas was emailed and texted about this call.',
   });
   const row = db.events[0];
@@ -126,8 +126,8 @@ test('a call is stored as a phone message, emailed to both owner addresses and t
   assert.equal(row.summary, 'Jane called about a new website for her plumbing business. Call her back after 3 pm.');
   assert.equal(row.conversation_id, 'call-abc'); assert.equal(row.question, '', 'the digest shows the summary, not a stray question');
   assert.equal(row.emailed, true);
-  assert.equal(bodies.length, 2);
-  assert.deepEqual(bodies.map(b => b.to), [...OWNER_ADDRESSES]);
+  assert.equal(bodies.length, 3, 'the two owner addresses and the gateway');
+  assert.deepEqual(bodies.map(b => b.to), [...OWNER_ADDRESSES, OWNER_VTEXT_ADDRESS]);
   assert.match(bodies[0].subject, /Front desk message/);
   assert.match(bodies[0].subject, /\+18125550123/);
   assert.match(bodies[0].subject, /Jane Caller/);
@@ -136,6 +136,9 @@ test('a call is stored as a phone message, emailed to both owner addresses and t
   assert.match(bodies[0].body, /Front desk: Legacy AI, how can I help\?/);
   assert.match(bodies[0].body, /Call id: call-abc/);
   assert.match(bodies[0].body, /Only you receive these messages/);
+  assert.equal(bodies[2].to, OWNER_VTEXT_ADDRESS);
+  assert.equal(bodies[2].subject, 'Front desk message');
+  assert.equal(bodies[2].body, composeFrontdeskText(readFrontdeskMessage(callPayload())), 'the gateway carries the short text, not the full composed message');
   assert.equal(texts.length, 1);
   assert.equal(texts[0].to, OWNER_NUMBER);
   assert.match(texts[0].body, /^Front desk message from \+18125550123 \(Jane Caller\)\. Jane called about a new website/);
@@ -147,10 +150,11 @@ test('a repeated report for the same call is acknowledged without emailing or te
   const repeat = await (await h.message(request(callPayload()))).json();
   assert.deepEqual(repeat, { ok: true, duplicate: true, stored: false, emailed: [], texted: false, callId: 'call-abc', message: 'This call was already sent to Douglas; nothing was sent again.' });
   assert.equal(db.events.length, 1, 'the repeated report is not stored twice');
-  assert.equal(bodies.length, 2); assert.equal(texts.length, 1);
+  assert.equal(bodies.length, 3); assert.equal(texts.length, 1);
+  assert.equal(bodies.filter(b => b.to === OWNER_VTEXT_ADDRESS).length, 1, 'the gateway is mailed once, for the first delivery');
   // A different call still gets through.
   assert.equal((await h.message(request(callPayload({ call_id: 'call-def' })))).status, 200);
-  assert.equal(db.events.length, 2); assert.equal(bodies.length, 4);
+  assert.equal(db.events.length, 2); assert.equal(bodies.length, 6);
 });
 
 test('a stored call whose notification failed is retried instead of being swallowed', async () => {
@@ -159,18 +163,18 @@ test('a stored call whose notification failed is retried instead of being swallo
   const quiet = console.error; console.error = () => {};
   try {
     const failed = await (await first.message(request(callPayload()))).json();
-    assert.deepEqual(failed, { ok: false, stored: true, emailed: [], emailFailed: [...OWNER_ADDRESSES], texted: false, textError: 'messaging down', duplicate: false, callId: 'call-abc', message: 'This call was not sent to Douglas. Check the front desk configuration.' });
+    assert.deepEqual(failed, { ok: false, stored: true, emailed: [], emailFailed: [...OWNER_ADDRESSES], texted: false, textVia: 'none', textError: 'messaging down', duplicate: false, callId: 'call-abc', message: 'This call was not sent to Douglas. Check the front desk configuration.' });
     assert.equal(db.events[0].emailed, false);
   } finally { console.error = quiet; }
   const second = handler({ db, bodies, texts });
   const retried = await (await second.h.message(request(callPayload()))).json();
-  assert.equal(retried.duplicate, false); assert.equal(retried.texted, true);
-  assert.equal(bodies.length, 2); assert.equal(texts.length, 1);
+  assert.equal(retried.duplicate, false); assert.equal(retried.texted, true); assert.equal(retried.textVia, 'signalwire');
+  assert.equal(bodies.length, 3); assert.equal(texts.length, 1);
   assert.equal(db.events.length, 1, 'the retry records the delivery on the row the first attempt stored');
   assert.equal(db.events[0].emailed, true);
   // With the delivery recorded, the next report for the same call is not sent again.
   assert.equal((await (await second.h.message(request(callPayload()))).json()).duplicate, true);
-  assert.equal(bodies.length, 2); assert.equal(texts.length, 1);
+  assert.equal(bodies.length, 3); assert.equal(texts.length, 1);
 });
 
 test('texting the owner is attempted even when the email cannot be delivered, and every failure is reported in the body', async () => {
@@ -189,12 +193,15 @@ test('texting the owner is attempted even when the email cannot be delivered, an
     const bodies = [], sent = [];
     const h = createFrontdeskHandler({ getDb: () => fakeDb(), mail: mailer(bodies), text: createOwnerTexter({ env: { ...env, FRONTDESK_SMS_FROM: '' }, fetcher: async () => { sent.push(1); return new Response('ok'); } }), env, now: () => new Date() });
     const value = await (await h.message(request(callPayload()))).json();
-    assert.equal(value.texted, false); assert.match(value.textError, /FRONTDESK_SMS_FROM/);
-    assert.equal(value.ok, true); assert.equal(bodies.length, 2); assert.equal(sent.length, 0, 'nothing is sent without the sender number');
-    // A refused send is reported rather than thrown.
+    assert.equal(value.texted, true, 'the gateway mail carries the text while SignalWire messaging is unconfigured'); assert.equal(value.textVia, 'vtext');
+    assert.match(value.textError, /FRONTDESK_SMS_FROM/);
+    assert.equal(value.ok, true); assert.equal(bodies.length, 3); assert.equal(sent.length, 0, 'nothing is sent without the sender number');
+    assert.equal(bodies[2].to, OWNER_VTEXT_ADDRESS);
+    // A refused send is reported rather than thrown, and the gateway still delivers the text.
     const refused = createFrontdeskHandler({ getDb: () => fakeDb(), mail: async () => true, text: createOwnerTexter({ env, fetcher: async () => new Response('nope', { status: 401 }) }), env });
     const refusedBody = await (await refused.message(request(callPayload()))).json();
-    assert.equal(refusedBody.texted, false); assert.match(refusedBody.textError, /SignalWire messaging returned 401/);
+    assert.equal(refusedBody.texted, true); assert.equal(refusedBody.textVia, 'vtext');
+    assert.match(refusedBody.textError, /SignalWire messaging returned 401/);
   } finally { console.error = quiet; }
 });
 
@@ -206,10 +213,11 @@ test('a missing or broken database never stops the owner being told', async () =
       const h = createFrontdeskHandler({ getDb, mail: mailer(bodies), text: async value => { texts.push(value); return true; }, env, now: () => new Date() });
       const response = await h.message(request(callPayload()));
       const body = await response.json();
-      assert.equal(response.status, 200); assert.equal(body.stored, false); assert.equal(body.texted, true);
+      assert.equal(response.status, 200); assert.equal(body.stored, false); assert.equal(body.texted, true); assert.equal(body.textVia, 'signalwire');
       assert(body.storageError, 'the storage failure is named in the response');
     }
-    assert.equal(bodies.length, 4); assert.equal(texts.length, 2);
+    assert.equal(bodies.length, 6); assert.equal(texts.length, 2);
+    assert.equal(bodies.filter(b => b.to === OWNER_VTEXT_ADDRESS).length, 2, 'the gateway mail still goes out when the database is unreachable');
   } finally { console.error = quiet; }
 });
 
@@ -279,7 +287,7 @@ test('the real events table accepts a front desk row and suppresses the repeat',
   const repeat = await (await h.message(request(callPayload()))).json();
   assert.equal(repeat.duplicate, true);
   assert.equal((await client.query('SELECT count(*)::int AS n FROM legacy_assistant_events')).rows[0].n, 1);
-  assert.equal(bodies.length, 2); assert.equal(texts.length, 1);
+  assert.equal(bodies.length, 3); assert.equal(texts.length, 1);
 });
 
 // The review fixes. Each test below fails against the code as merged.
@@ -332,8 +340,8 @@ test('only a finished call is reported: a fetch at call start is ignored and can
     // The finished report for the same call still goes out, and is not mistaken for a repeat.
     const finished = await (await h.message(request(callPayload()))).json();
     assert.equal(finished.duplicate, false);
-    assert.deepEqual(finished.emailed, [...OWNER_ADDRESSES]); assert.equal(finished.texted, true);
-    assert.equal(db.events.length, 1); assert.equal(bodies.length, 2); assert.equal(texts.length, 1);
+    assert.deepEqual(finished.emailed, [...OWNER_ADDRESSES]); assert.equal(finished.texted, true); assert.equal(finished.textVia, 'signalwire');
+    assert.equal(db.events.length, 1); assert.equal(bodies.length, 3); assert.equal(texts.length, 1);
     // Every other action is named in the response and nothing is sent for it.
     const other = await (await h.message(request(callPayload({ action: 'post_prompt' })))).json();
     assert.equal(other.ignored, true); assert.equal(other.action, 'post_prompt');
@@ -341,7 +349,8 @@ test('only a finished call is reported: a fetch at call start is ignored and can
     const unnamed = await (await h.message(request(callPayload({ action: undefined })))).json();
     assert.equal(unnamed.ignored, true); assert.equal(unnamed.action, '');
     assert.match(unnamed.message, /named no action/);
-    assert.equal(db.events.length, 1); assert.equal(bodies.length, 2); assert.equal(texts.length, 1);
+    assert.equal(db.events.length, 1); assert.equal(bodies.length, 3); assert.equal(texts.length, 1);
+    assert.equal(bodies.filter(b => b.to === OWNER_VTEXT_ADDRESS).length, 1, 'the gateway is mailed once, for the finished call only');
   } finally { console.error = quiet; }
 });
 
@@ -383,11 +392,15 @@ test('a caller name or number with a line break cannot break the email subject',
     caller_id_name: 'Jane Caller\r\nX-Forwarded-To: someone.else@example.test',
   });
   assert.equal((await h.message(request(inject))).status, 200);
-  assert.equal(bodies.length, 2);
-  for (const sent of bodies) {
+  assert.equal(bodies.length, 3);
+  // Only the two owner addresses carry the composed subject; the gateway mail carries the
+  // short text, which must stay on one line as well.
+  for (const sent of bodies.slice(0, OWNER_ADDRESSES.length)) {
     assert(!/[\r\n]/.test(sent.subject), 'the subject stays a single header value');
     assert.match(sent.subject, /^Front desk message from \+18125550123 Bcc: someone\.else@example\. \(Jane Caller X-Forwarded-To: someone\.else@example\.test\)$/);
   }
+  assert.equal(bodies[2].to, OWNER_VTEXT_ADDRESS);
+  assert(!/[\r\n]/.test(bodies[2].body), 'the gateway copy is one line');
   assert(!/[\r\n]/.test(texts[0].body), 'the text message is one line');
   // The stored row keeps the caller's own text; only the composed subject and body lines are
   // collapsed onto one line.
@@ -425,7 +438,7 @@ test('the request cap is counted in bytes while the body is read, and reading st
   assert(huge.state.pulled < 20, `the read stopped at the cap instead of pulling every chunk (pulled ${huge.state.pulled} of 20)`);
   // A body inside the cap in bytes is read whole and parsed.
   assert.equal((await h.message(streamRequest([JSON.stringify(callPayload())]).request)).status, 200);
-  assert.equal(bodies.length, 2); assert.equal(texts.length, 1);
+  assert.equal(bodies.length, 3); assert.equal(texts.length, 1);
 });
 
 test('a report is delivered even when more than 200 stored events are in the duplicate window', async t => {
@@ -438,7 +451,7 @@ test('a report is delivered even when more than 200 stored events are in the dup
   assert.equal((await h.message(request(callPayload()))).status, 200);
   const repeat = await (await h.message(request(callPayload()))).json();
   assert.equal(repeat.duplicate, true, 'the call id is matched directly, however many other events are stored');
-  assert.equal(bodies.length, 2, 'the repeat emailed nobody'); assert.equal(texts.length, 1);
+  assert.equal(bodies.length, 3, 'the repeat emailed nobody and did not reach the gateway'); assert.equal(texts.length, 1);
   assert.equal((await client.query("SELECT count(*)::int AS n FROM legacy_assistant_events WHERE conversation_id = 'call-abc'")).rows[0].n, 1);
   assert.equal((await client.query('SELECT count(*)::int AS n FROM legacy_frontdesk_calls')).rows[0].n, 1);
 });
@@ -452,21 +465,21 @@ test('two overlapping deliveries of one call notify once', async t => {
   const fast = createFrontdeskHandler({ getDb: () => db, mail: mailer(bodies), text: async value => { texts.push(value); return true; }, env, now: () => new Date() });
   const handling = slow.message(request(callPayload()));
   await started;
-  assert.equal(bodies.length, 2, 'the first delivery is emailing both addresses');
+  assert.equal(bodies.length, 3, 'the first delivery is emailing both addresses and mailing the gateway');
   const overlapping = await (await fast.message(request(callPayload()))).json();
   assert.equal(overlapping.inFlight, true, 'the overlapping delivery reports that the call is already being sent');
   assert.equal(overlapping.duplicate, false);
   assert.deepEqual(overlapping.emailed, []); assert.equal(overlapping.texted, false);
-  assert.equal(bodies.length, 2, 'the overlapping delivery emailed nobody'); assert.equal(texts.length, 1, 'and texted nobody');
+  assert.equal(bodies.length, 3, 'the overlapping delivery emailed nobody'); assert.equal(texts.length, 1, 'and texted nobody');
   release();
   const delivered = await (await handling).json();
   assert.equal(delivered.duplicate, false); assert.deepEqual(delivered.emailed, [...OWNER_ADDRESSES]); assert.equal(delivered.texted, true);
-  assert.equal(bodies.length, 2); assert.equal(texts.length, 1);
+  assert.equal(bodies.length, 3); assert.equal(texts.length, 1);
   assert.equal((await client.query('SELECT count(*)::int AS n FROM legacy_assistant_events')).rows[0].n, 1, 'the call is stored once');
   // A later report for the same call is a repeat, and sends nothing.
   const repeat = await (await fast.message(request(callPayload()))).json();
   assert.equal(repeat.duplicate, true);
-  assert.equal(bodies.length, 2); assert.equal(texts.length, 1);
+  assert.equal(bodies.length, 3); assert.equal(texts.length, 1);
 });
 
 test('a delivery killed mid-flight is taken over, and a claim that is still running is left alone', async t => {
@@ -479,14 +492,14 @@ test('a delivery killed mid-flight is taken over, and a claim that is still runn
   const taken = await (await h.message(request(callPayload()))).json();
   assert.equal(taken.duplicate, false); assert.equal(taken.stored, true);
   assert.deepEqual(taken.emailed, [...OWNER_ADDRESSES]); assert.equal(taken.texted, true);
-  assert.equal(bodies.length, 2); assert.equal(texts.length, 1);
+  assert.equal(bodies.length, 3); assert.equal(texts.length, 1);
   assert.equal((await client.query('SELECT count(*)::int AS n FROM legacy_assistant_events')).rows[0].n, 1);
   // A claim that is still fresh belongs to the delivery that is running.
   await client.exec(`UPDATE legacy_frontdesk_calls SET emailed = false, texted = false, delivering = true, claimed_at = now() WHERE call_id = 'call-abc'`);
   const held = await (await h.message(request(callPayload()))).json();
   assert.equal(held.inFlight, true); assert.equal(held.duplicate, false);
   assert.deepEqual(held.emailed, []); assert.equal(held.texted, false);
-  assert.equal(bodies.length, 2); assert.equal(texts.length, 1);
+  assert.equal(bodies.length, 3); assert.equal(texts.length, 1);
 });
 
 test('the two emails and the text are all started before any of them finishes', async () => {
@@ -522,6 +535,7 @@ test('a call whose email failed is not recorded as done, so the email is retried
     const retried = await (await second.h.message(request(callPayload()))).json();
     assert.equal(retried.duplicate, false);
     assert.deepEqual(retried.emailed, [...OWNER_ADDRESSES]);
+    assert.equal(retried.textVia, 'none', 'nothing is sent on the text channel again');
     assert.equal(bodies.length, 2, 'the email was retried'); assert.equal(texts.length, 1, 'the text went out once');
     assert.equal(db.events.length, 1); assert.equal(db.events[0].emailed, true);
     assert.equal(db.calls.get('call-abc').emailed, true);
@@ -530,4 +544,145 @@ test('a call whose email failed is not recorded as done, so the email is retried
     assert.equal(repeat.duplicate, true);
     assert.equal(bodies.length, 2); assert.equal(texts.length, 1);
   } finally { console.error = quiet; }
+});
+
+// The carrier email-to-text gateway. While SignalWire messaging is refused, the short text
+// also goes to Douglas by mail through Verizon's gateway, which turns it into an SMS.
+
+test('the gateway address is derived from the owner number', () => {
+  assert.equal(OWNER_NUMBER, '+18123405761');
+  assert.equal(OWNER_VTEXT_ADDRESS, '8123405761@vtext.com', 'the country code is dropped and the gateway host appended');
+});
+
+test('both owner addresses receive the full message and the gateway receives the short one', async () => {
+  const { bodies, texts, h } = handler();
+  const body = await (await h.message(request(callPayload()))).json();
+  assert.equal(body.textVia, 'signalwire');
+  assert.equal(bodies.length, 3, 'two owner mails and one gateway mail');
+  assert.deepEqual(bodies.map(sent => sent.to), [...OWNER_ADDRESSES, OWNER_VTEXT_ADDRESS], 'the two owner addresses are unchanged and the gateway is added');
+  const full = composeFrontdeskMessage(readFrontdeskMessage(callPayload(), new Date('2026-10-13T18:05:00.000Z')));
+  for (const to of OWNER_ADDRESSES) {
+    assert.deepEqual(bodies.find(sent => sent.to === to), { to, subject: full.subject, body: full.body }, 'each owner address gets the full composed message');
+  }
+  const gateway = bodies[2];
+  assert.equal(gateway.to, OWNER_VTEXT_ADDRESS);
+  assert.equal(gateway.subject, 'Front desk message');
+  assert.equal(gateway.body, texts[0].body, 'the gateway carries the same short text as the SignalWire message');
+  assert.match(gateway.body, /^Front desk message from \+18125550123 \(Jane Caller\)\./);
+  assert(!/Transcript|Only you receive these messages/.test(gateway.body), 'the gateway mail is not the full composed message');
+});
+
+test('a refused SignalWire text is delivered by the gateway mail, and the response names that route', async () => {
+  const quiet = console.error; console.error = () => {};
+  try {
+    const bodies = [], sent = [], db = fakeDb();
+    const h = createFrontdeskHandler({
+      getDb: () => db,
+      mail: mailer(bodies),
+      text: createOwnerTexter({ env, fetcher: async () => { sent.push(1); return new Response('nope', { status: 401 }); } }),
+      env, now: () => new Date('2026-10-13T18:05:00.000Z'),
+    });
+    const body = await (await h.message(request(callPayload()))).json();
+    assert.equal(sent.length, 1, 'the SignalWire text is still attempted');
+    assert.equal(body.texted, true, 'the text channel counts as delivered');
+    assert.equal(body.textVia, 'vtext', 'the route that delivered the text is named');
+    assert.equal(body.ok, true); assert.deepEqual(body.emailed, [...OWNER_ADDRESSES]);
+    assert.match(body.textError, /SignalWire messaging returned 401/, 'the SignalWire failure is still reported');
+    assert.equal(bodies.length, 3);
+    assert.equal(bodies[2].to, OWNER_VTEXT_ADDRESS);
+    assert.match(bodies[2].body, /^Front desk message from \+18125550123 \(Jane Caller\)\. Jane called about/);
+    // The text channel is recorded as delivered, so a later report sends nothing.
+    const repeat = await (await h.message(request(callPayload()))).json();
+    assert.equal(repeat.duplicate, true);
+    assert.equal(bodies.length, 3); assert.equal(sent.length, 1);
+  } finally { console.error = quiet; }
+});
+
+test('when both text routes fail the response reports the failure and the error text', async () => {
+  const quiet = console.error; console.error = () => {};
+  try {
+    const bodies = [];
+    const h = createFrontdeskHandler({
+      getDb: () => fakeDb(),
+      mail: async value => { if (value.to === OWNER_VTEXT_ADDRESS) throw new Error('gateway refused'); bodies.push(value); return true; },
+      text: async () => { throw new Error('messaging down'); },
+      env, now: () => new Date('2026-10-13T18:05:00.000Z'),
+    });
+    const body = await (await h.message(request(callPayload()))).json();
+    assert.equal(body.texted, false);
+    assert.equal(body.textVia, 'none');
+    assert.equal(body.textError, 'messaging down');
+    assert.equal(body.ok, true, 'a failed gateway send does not become a failed email');
+    assert.deepEqual(body.emailed, [...OWNER_ADDRESSES]);
+    assert.equal(bodies.length, 2, 'the two owner emails still went out');
+    assert.match(body.message, /the text message did not go out/);
+    // Neither route can suppress the other: both are attempted whatever the other does.
+    const calls = [];
+    const both = createFrontdeskHandler({
+      getDb: () => fakeDb(),
+      mail: async value => { calls.push(`mail ${value.to}`); if (value.to === OWNER_VTEXT_ADDRESS) throw new Error('gateway refused'); return true; },
+      text: async () => { calls.push('signalwire'); throw new Error('messaging down'); },
+      env, now: () => new Date('2026-10-13T18:05:00.000Z'),
+    });
+    const bothBody = await (await both.message(request(callPayload()))).json();
+    assert(calls.includes('signalwire'), 'the SignalWire attempt still runs when the gateway fails');
+    assert(calls.includes(`mail ${OWNER_VTEXT_ADDRESS}`), 'the gateway send still runs when SignalWire fails');
+    assert.equal(bothBody.texted, false); assert.equal(bothBody.textVia, 'none');
+  } finally { console.error = quiet; }
+});
+
+test('the call-id duplicate rule still holds: a repeat delivery sends nothing to any recipient', async () => {
+  const { db, bodies, texts, h } = handler();
+  await h.message(request(callPayload()));
+  assert.equal(bodies.length, 3); assert.equal(texts.length, 1);
+  const repeat = await (await h.message(request(callPayload()))).json();
+  assert.equal(repeat.duplicate, true);
+  assert.equal(repeat.texted, false); assert.deepEqual(repeat.emailed, []);
+  assert.equal(bodies.length, 3, 'no mail goes to either owner address or to the gateway');
+  assert.equal(texts.length, 1, 'no SignalWire text is sent again');
+  assert.equal(bodies.filter(sent => sent.to === OWNER_VTEXT_ADDRESS).length, 1, 'the gateway is mailed once, for the first delivery');
+  assert.equal(db.events.length, 1, 'the repeated report is not stored twice');
+});
+
+test('a gateway text does not stand in for the mandatory email, and is not sent twice', async () => {
+  const db = fakeDb(), bodies = [], texts = [];
+  const quiet = console.error; console.error = () => {};
+  try {
+    let emailBroken = true;
+    const mail = async value => { if (emailBroken && value.to !== OWNER_VTEXT_ADDRESS) throw new Error('webhook down'); bodies.push(value); return true; };
+    const build = () => createFrontdeskHandler({ getDb: () => db, mail, text: async value => { texts.push(value); return true; }, env, now: () => new Date('2026-10-13T18:05:00.000Z') });
+    const failed = await (await build().message(request(callPayload()))).json();
+    assert.deepEqual(failed.emailed, []); assert.equal(failed.emailFailed.length, OWNER_ADDRESSES.length);
+    assert.equal(failed.texted, true); assert.equal(failed.textVia, 'signalwire'); assert.equal(failed.ok, false);
+    assert.equal(db.events[0].emailed, false, 'a text is not an email, so the stored row does not claim Douglas was emailed');
+    assert.equal(db.calls.get('call-abc').emailed, false, 'and neither does the claim row');
+    assert.equal(bodies.length, 1, 'only the gateway mail went out');
+    // The next report for this call sends the email the owner is owed, and nothing on the text channel.
+    emailBroken = false;
+    const retried = await (await build().message(request(callPayload()))).json();
+    assert.equal(retried.duplicate, false);
+    assert.deepEqual(retried.emailed, [...OWNER_ADDRESSES]);
+    assert.equal(retried.textVia, 'none', 'nothing is sent on the text channel again');
+    assert.equal(texts.length, 1, 'the SignalWire text went out once');
+    assert.equal(bodies.filter(sent => sent.to === OWNER_VTEXT_ADDRESS).length, 1, 'the gateway mail went out once');
+    assert.equal(db.events[0].emailed, true);
+    assert.equal((await (await build().message(request(callPayload()))).json()).duplicate, true);
+  } finally { console.error = quiet; }
+});
+
+test('the request-length and transcript caps are unaffected by the gateway copy', async () => {
+  const { bodies, texts, h } = handler();
+  const record = readFrontdeskMessage(callPayload({ call_log: [...Array(400).keys()].map(i => ({ role: 'user', content: `note ${i}` })) }));
+  assert.equal(record.transcript.length, 200); assert.equal(record.transcriptTruncated, true);
+  // A summary far past the text cap is cut for the gateway copy as well as for the full message.
+  const heavy = await (await h.message(request({ ...callPayload(), call_log: [...Array(250).keys()].map(i => ({ role: 'user', content: `${i} ${'y'.repeat(120)}` })), post_prompt_data: { raw: 'z'.repeat(9000) } }))).json();
+  assert.equal(heavy.ok, true);
+  assert.equal(bodies.length, 3); assert.equal(texts.length, 1);
+  assert(bodies[0].body.length < 30000, 'the full composed message stays bounded');
+  assert(bodies[2].body.length <= 300, `the gateway copy stays within about two SMS segments (was ${bodies[2].body.length})`);
+  assert(bodies[2].body.length < bodies[0].body.length, 'the gateway gets the short text, not the full message');
+  assert(!/[\r\n]/.test(bodies[2].body));
+  // The byte cap on the request is unchanged, and a refused report sends nothing anywhere.
+  assert.equal((await h.message(request({ ...callPayload(), call_id: 'call-oversize', pad: 'x'.repeat(300000) }))).status, 413);
+  assert.equal(bodies.length, 3); assert.equal(texts.length, 1);
 });
