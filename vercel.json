@@ -19,6 +19,9 @@
     },
     "api/assistant/notify.js": {
       "maxDuration": 30
+    },
+    "api/frontdesk/message.js": {
+      "maxDuration": 30
     }
   },
   "headers": [
