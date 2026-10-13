@@ -30,13 +30,39 @@ function callPayload(overrides = {}) {
     ...overrides,
   };
 }
-// Fake drizzle handle: answers the handful of statements the assistant store issues.
+// Fake drizzle handle: answers the handful of statements the assistant store and the
+// front desk call store issue. The assistant events table and the call claim table are
+// held in memory, with the call id acting as the primary key the real one would use, so a
+// repeated or overlapping delivery is decided here the way the database decides it.
 function fakeDb() {
-  const events = [];
-  return { events, execute: async query => {
+  const events = [], calls = new Map();
+  return { events, calls, execute: async query => {
     const text = query.queryChunks ? query.queryChunks.map(c => c.value?.join?.('') ?? '').join('?') : String(query.sql || '');
     const params = query.queryChunks ? query.queryChunks.filter(c => !c.value) : [];
-    if (/CREATE TABLE/.test(text)) return { rows: [] };
+    const [first, second] = params;
+    if (/CREATE TABLE|CREATE INDEX/.test(text)) return { rows: [] };
+    if (/INSERT INTO legacy_frontdesk_calls/.test(text)) {
+      if (calls.has(first)) return { rows: [] };
+      calls.set(first, { call_id: first, event_id: null, emailed: false, texted: false, delivering: true, claimed_at: new Date(), delivered_at: null });
+      return { rows: [{ call_id: first }] };
+    }
+    if (/SELECT call_id, event_id, emailed, texted FROM legacy_frontdesk_calls/.test(text)) {
+      const row = calls.get(first);
+      return { rows: row ? [{ call_id: row.call_id, event_id: row.event_id, emailed: row.emailed, texted: row.texted }] : [] };
+    }
+    if (/UPDATE legacy_frontdesk_calls SET delivering = true/.test(text)) {
+      const row = calls.get(first);
+      const stranded = Boolean(row) && new Date(row.claimed_at).getTime() <= Date.now() - Number(second) * 1000;
+      if (!row || (row.delivering !== false && !stranded)) return { rows: [] };
+      row.delivering = true; row.claimed_at = new Date();
+      return { rows: [{ call_id: first }] };
+    }
+    if (/UPDATE legacy_frontdesk_calls SET event_id/.test(text)) { const row = calls.get(second); if (row) row.event_id = first; return { rows: [] }; }
+    if (/UPDATE legacy_frontdesk_calls SET delivering = false/.test(text)) {
+      const [emailed, texted, , callId] = params, row = calls.get(callId);
+      if (row) { row.delivering = false; row.emailed ||= emailed === true; row.texted ||= texted === true; if (row.emailed) row.delivered_at ||= new Date(); }
+      return { rows: [] };
+    }
     if (/INSERT INTO legacy_assistant_events/.test(text)) { const [id, kind, channel, visitor_name, contact, question, summary, conversation_id] = params; const row = { id, kind, channel, visitor_name, contact, question, summary, conversation_id, emailed: false, created_at: new Date().toISOString() }; events.push(row); return { rows: [row] }; }
     if (/UPDATE legacy_assistant_events/.test(text)) { events.find(e => e.id === params[0]).emailed = true; return { rows: [] }; }
     if (/FROM legacy_assistant_events/.test(text)) return { rows: [...events] };
@@ -254,4 +280,254 @@ test('the real events table accepts a front desk row and suppresses the repeat',
   assert.equal(repeat.duplicate, true);
   assert.equal((await client.query('SELECT count(*)::int AS n FROM legacy_assistant_events')).rows[0].n, 1);
   assert.equal(bodies.length, 2); assert.equal(texts.length, 1);
+});
+
+// The review fixes. Each test below fails against the code as merged.
+
+// A body that arrives in chunks with no content-length header, the way a platform hands
+// one over: only reading the stream can enforce the request cap. `state.pulled` counts the
+// chunks the handler actually took off the stream.
+function streamRequest(pieces) {
+  const state = { pulled: 0 };
+  const encoder = new TextEncoder();
+  const request = new Request('https://legacyai.space/api/frontdesk/message', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-frontdesk-secret': env.RECEPTIONIST_WEBHOOK_SECRET },
+    duplex: 'half',
+    body: new ReadableStream({ pull(controller) { if (state.pulled >= pieces.length) return controller.close(); controller.enqueue(encoder.encode(pieces[state.pulled++])); } }),
+  });
+  return { request, state };
+}
+// A real database with both assistant migrations applied. The handler creates its own call
+// table on first use as well, so running it here proves the two agree.
+async function frontdeskSchema(client) {
+  for (const file of ['0003_assistant_events.sql', '0004_frontdesk_calls.sql']) await client.exec(await readFile(new URL(`../migrations/${file}`, import.meta.url), 'utf8'));
+}
+async function seededDatabase(t) {
+  const client = new PGlite();
+  t.after(() => client.close());
+  await frontdeskSchema(client);
+  return client;
+}
+
+test('the Vercel route exports a callable fetch handler, not the map of route names', async () => {
+  const route = await import('../api/frontdesk/message.js');
+  assert.equal(typeof route.default, 'object');
+  assert.equal(typeof route.default.fetch, 'function', 'Vercel calls fetch itself, so it must be the handler rather than the object keyed by route name');
+  assert.equal(route.default.fetch.length, 1, 'the exported handler is the one that takes a request');
+});
+
+test('only a finished call is reported: a fetch at call start is ignored and cannot swallow the real report', async () => {
+  const quiet = console.error; console.error = () => {};
+  try {
+    const { db, bodies, texts, h } = handler();
+    const fetched = await (await h.message(request(callPayload({ action: 'fetch_conversation' })))).json();
+    assert.deepEqual(fetched, {
+      ok: true, ignored: true, action: 'fetch_conversation', stored: false, emailed: [], texted: false, duplicate: false, callId: 'call-abc',
+      message: "A 'fetch_conversation' request is not a finished call, so nothing was sent to Douglas.",
+    });
+    assert.equal(db.events.length, 0, 'a fetch is not stored as a call');
+    assert.equal(db.calls.size, 0, 'a fetch does not claim the call');
+    assert.equal(bodies.length, 0); assert.equal(texts.length, 0);
+    // The finished report for the same call still goes out, and is not mistaken for a repeat.
+    const finished = await (await h.message(request(callPayload()))).json();
+    assert.equal(finished.duplicate, false);
+    assert.deepEqual(finished.emailed, [...OWNER_ADDRESSES]); assert.equal(finished.texted, true);
+    assert.equal(db.events.length, 1); assert.equal(bodies.length, 2); assert.equal(texts.length, 1);
+    // Every other action is named in the response and nothing is sent for it.
+    const other = await (await h.message(request(callPayload({ action: 'post_prompt' })))).json();
+    assert.equal(other.ignored, true); assert.equal(other.action, 'post_prompt');
+    assert.equal(other.texted, false); assert.deepEqual(other.emailed, []);
+    const unnamed = await (await h.message(request(callPayload({ action: undefined })))).json();
+    assert.equal(unnamed.ignored, true); assert.equal(unnamed.action, '');
+    assert.match(unnamed.message, /named no action/);
+    assert.equal(db.events.length, 1); assert.equal(bodies.length, 2); assert.equal(texts.length, 1);
+  } finally { console.error = quiet; }
+});
+
+test('the documented caller_id_number is read, and the older caller_id_num still works', async () => {
+  const { db, bodies, texts, h } = handler();
+  const documented = callPayload({ caller_id_number: '+18125550999', caller_id_num: undefined });
+  assert.equal((await h.message(request(documented))).status, 200);
+  assert.equal(db.events[0].contact, '+18125550999', 'the stored contact carries the number');
+  assert.match(bodies[0].subject, /\+18125550999/);
+  assert.match(bodies[0].body, /Caller: \+18125550999/);
+  assert.match(texts[0].body, /^Front desk message from \+18125550999/);
+  // The documented field wins when a report carries both, and the older name is still read.
+  assert.equal(readFrontdeskMessage({ caller_id_number: '+18125550999', caller_id_num: '+18120000000' }).callerNumber, '+18125550999');
+  assert.equal(readFrontdeskMessage({ caller_id_num: '+18125550123' }).callerNumber, '+18125550123');
+  assert.equal(readFrontdeskMessage({ caller_id_number: 42, caller_id_num: '+18125550123' }).callerNumber, '+18125550123');
+  assert.equal(readFrontdeskMessage({ caller_id_number: 'z'.repeat(400) }).callerNumber.length, 40);
+});
+
+test('call times sent as Unix microseconds become real call times', () => {
+  const start = Date.parse('2026-10-13T14:00:00.000Z') * 1000;
+  const record = readFrontdeskMessage(callPayload({ call_start_date: start, call_answer_date: start + 4000000, call_end_date: start + 180000000 }));
+  assert.equal(record.startedAt, '2026-10-13T14:00:00.000Z');
+  assert.equal(record.answeredAt, '2026-10-13T14:00:04.000Z');
+  assert.equal(record.endedAt, '2026-10-13T14:03:00.000Z');
+  const message = composeFrontdeskMessage(record);
+  assert.match(message.body, /Call started: Oct 13, 10:00 AM/);
+  assert.match(message.body, /Call ended: Oct 13, 10:03 AM/);
+  // Milliseconds and seconds are read too, and junk is still dropped.
+  assert.equal(readFrontdeskMessage(callPayload({ call_start_date: 1791900000000 })).startedAt, '2026-10-13T14:00:00.000Z');
+  assert.equal(readFrontdeskMessage(callPayload({ call_start_date: 1791900000 })).startedAt, '2026-10-13T14:00:00.000Z');
+  assert.equal(readFrontdeskMessage(callPayload({ call_start_date: 'not a date' })).startedAt, '');
+  assert.equal(readFrontdeskMessage(callPayload({ call_end_date: 0 })).endedAt, '');
+});
+
+test('a caller name or number with a line break cannot break the email subject', async () => {
+  const { bodies, texts, h } = handler();
+  const inject = callPayload({
+    caller_id_number: '+18125550123\r\nBcc: someone.else@example.test',
+    caller_id_name: 'Jane Caller\r\nX-Forwarded-To: someone.else@example.test',
+  });
+  assert.equal((await h.message(request(inject))).status, 200);
+  assert.equal(bodies.length, 2);
+  for (const sent of bodies) {
+    assert(!/[\r\n]/.test(sent.subject), 'the subject stays a single header value');
+    assert.match(sent.subject, /^Front desk message from \+18125550123 Bcc: someone\.else@example\. \(Jane Caller X-Forwarded-To: someone\.else@example\.test\)$/);
+  }
+  assert(!/[\r\n]/.test(texts[0].body), 'the text message is one line');
+  // The stored row keeps the caller's own text; only the composed subject and body lines are
+  // collapsed onto one line.
+  assert.match(bodies[0].body, /^Caller: \+18125550123 Bcc: someone\.else@example\. \(Jane Caller X-Forwarded-To: someone\.else@example\.test\)$/m);
+});
+
+test('the transcript spends only the remaining budget and stops at the documented limit', () => {
+  const turn = size => ({ role: 'user', content: 'x'.repeat(size) });
+  const total = record => record.transcript.reduce((sum, entry) => sum + entry.content.length, 0);
+  // 19,999 characters already spent: the next 2,000-character turn may only add the 1 left.
+  const nearly = readFrontdeskMessage(callPayload({ call_log: [...Array(9).keys()].map(() => turn(2000)).concat([turn(1999), turn(2000)]) }));
+  assert.equal(total(nearly), 20000, 'the transcript stops at the documented 20,000 characters');
+  assert.equal(nearly.transcriptTruncated, true);
+  assert.equal(nearly.transcript.at(-1).content.length, 1, 'the last turn is cut to what is left of the budget');
+  // Exactly the budget is not a truncation; one character more is.
+  const exact = readFrontdeskMessage(callPayload({ call_log: [...Array(10).keys()].map(() => turn(2000)) }));
+  assert.equal(total(exact), 20000); assert.equal(exact.transcriptTruncated, false);
+  const over = readFrontdeskMessage(callPayload({ call_log: [...Array(11).keys()].map(() => turn(2000)) }));
+  assert.equal(total(over), 20000); assert.equal(over.transcriptTruncated, true);
+  assert.equal(over.transcript.length, 10, 'a turn with no budget left is dropped rather than stored empty');
+});
+
+test('the request cap is counted in bytes while the body is read, and reading stops at the cap', async () => {
+  const { bodies, texts, h } = handler();
+  // 140,000 two-byte characters: inside the cap counted as string characters, well over it
+  // counted as bytes.
+  const wide = JSON.stringify({ ...callPayload(), pad: 'é'.repeat(140000) });
+  assert(wide.length < 262144 && Buffer.byteLength(wide) > 262144, 'the payload is under the cap in characters and over it in bytes');
+  assert.equal(streamRequest([wide]).request.headers.get('content-length'), null, 'a streamed body carries no content-length');
+  assert.equal((await h.message(streamRequest([wide]).request)).status, 413);
+  assert.equal(bodies.length, 0); assert.equal(texts.length, 0);
+  // A body far over the cap is not read to the end: the cap is passed on the ninth chunk.
+  const huge = streamRequest(Array.from({ length: 20 }, () => 'x'.repeat(32768)));
+  assert.equal((await h.message(huge.request)).status, 413);
+  assert(huge.state.pulled < 20, `the read stopped at the cap instead of pulling every chunk (pulled ${huge.state.pulled} of 20)`);
+  // A body inside the cap in bytes is read whole and parsed.
+  assert.equal((await h.message(streamRequest([JSON.stringify(callPayload())]).request)).status, 200);
+  assert.equal(bodies.length, 2); assert.equal(texts.length, 1);
+});
+
+test('a report is delivered even when more than 200 stored events are in the duplicate window', async t => {
+  const client = await seededDatabase(t);
+  const db = drizzle(client), bodies = [], texts = [];
+  // 250 escalations inside the seven-day window and all older than this call: a lookup that
+  // reads a capped, oldest-first page of that window never sees the call itself.
+  await client.exec(`INSERT INTO legacy_assistant_events (id, kind, channel, question, created_at) SELECT gen_random_uuid(), 'unanswered_question', 'web', 'question ' || i, now() - interval '1 hour' FROM generate_series(1, 250) AS i`);
+  const h = createFrontdeskHandler({ getDb: () => db, mail: mailer(bodies), text: async value => { texts.push(value); return true; }, env, now: () => new Date() });
+  assert.equal((await h.message(request(callPayload()))).status, 200);
+  const repeat = await (await h.message(request(callPayload()))).json();
+  assert.equal(repeat.duplicate, true, 'the call id is matched directly, however many other events are stored');
+  assert.equal(bodies.length, 2, 'the repeat emailed nobody'); assert.equal(texts.length, 1);
+  assert.equal((await client.query("SELECT count(*)::int AS n FROM legacy_assistant_events WHERE conversation_id = 'call-abc'")).rows[0].n, 1);
+  assert.equal((await client.query('SELECT count(*)::int AS n FROM legacy_frontdesk_calls')).rows[0].n, 1);
+});
+
+test('two overlapping deliveries of one call notify once', async t => {
+  const client = await seededDatabase(t);
+  const db = drizzle(client), bodies = [], texts = [];
+  let release, sending;
+  const blocked = new Promise(resolve => { release = resolve; }), started = new Promise(resolve => { sending = resolve; });
+  const slow = createFrontdeskHandler({ getDb: () => db, mail: async value => { bodies.push(value); sending(); await blocked; return true; }, text: async value => { texts.push(value); return true; }, env, now: () => new Date() });
+  const fast = createFrontdeskHandler({ getDb: () => db, mail: mailer(bodies), text: async value => { texts.push(value); return true; }, env, now: () => new Date() });
+  const handling = slow.message(request(callPayload()));
+  await started;
+  assert.equal(bodies.length, 2, 'the first delivery is emailing both addresses');
+  const overlapping = await (await fast.message(request(callPayload()))).json();
+  assert.equal(overlapping.inFlight, true, 'the overlapping delivery reports that the call is already being sent');
+  assert.equal(overlapping.duplicate, false);
+  assert.deepEqual(overlapping.emailed, []); assert.equal(overlapping.texted, false);
+  assert.equal(bodies.length, 2, 'the overlapping delivery emailed nobody'); assert.equal(texts.length, 1, 'and texted nobody');
+  release();
+  const delivered = await (await handling).json();
+  assert.equal(delivered.duplicate, false); assert.deepEqual(delivered.emailed, [...OWNER_ADDRESSES]); assert.equal(delivered.texted, true);
+  assert.equal(bodies.length, 2); assert.equal(texts.length, 1);
+  assert.equal((await client.query('SELECT count(*)::int AS n FROM legacy_assistant_events')).rows[0].n, 1, 'the call is stored once');
+  // A later report for the same call is a repeat, and sends nothing.
+  const repeat = await (await fast.message(request(callPayload()))).json();
+  assert.equal(repeat.duplicate, true);
+  assert.equal(bodies.length, 2); assert.equal(texts.length, 1);
+});
+
+test('a delivery killed mid-flight is taken over, and a claim that is still running is left alone', async t => {
+  const client = await seededDatabase(t);
+  const db = drizzle(client), bodies = [], texts = [];
+  const h = createFrontdeskHandler({ getDb: () => db, mail: mailer(bodies), text: async value => { texts.push(value); return true; }, env, now: () => new Date() });
+  // A claim left running by a function that died six minutes ago is taken over, and the
+  // row it never got to store is stored by this delivery.
+  await client.exec(`INSERT INTO legacy_frontdesk_calls (call_id, delivering, claimed_at) VALUES ('call-abc', true, now() - interval '6 minutes')`);
+  const taken = await (await h.message(request(callPayload()))).json();
+  assert.equal(taken.duplicate, false); assert.equal(taken.stored, true);
+  assert.deepEqual(taken.emailed, [...OWNER_ADDRESSES]); assert.equal(taken.texted, true);
+  assert.equal(bodies.length, 2); assert.equal(texts.length, 1);
+  assert.equal((await client.query('SELECT count(*)::int AS n FROM legacy_assistant_events')).rows[0].n, 1);
+  // A claim that is still fresh belongs to the delivery that is running.
+  await client.exec(`UPDATE legacy_frontdesk_calls SET emailed = false, texted = false, delivering = true, claimed_at = now() WHERE call_id = 'call-abc'`);
+  const held = await (await h.message(request(callPayload()))).json();
+  assert.equal(held.inFlight, true); assert.equal(held.duplicate, false);
+  assert.deepEqual(held.emailed, []); assert.equal(held.texted, false);
+  assert.equal(bodies.length, 2); assert.equal(texts.length, 1);
+});
+
+test('the two emails and the text are all started before any of them finishes', async () => {
+  const order = [];
+  const step = async name => { order.push(`start ${name}`); await new Promise(resolve => setImmediate(resolve)); order.push(`end ${name}`); return true; };
+  const h = createFrontdeskHandler({
+    getDb: () => fakeDb(),
+    mail: async ({ to }) => step(to),
+    text: async () => step('text'),
+    env, now: () => new Date('2026-10-13T18:05:00.000Z'),
+  });
+  const body = await (await h.message(request(callPayload()))).json();
+  assert.deepEqual(body.emailed, [...OWNER_ADDRESSES]); assert.equal(body.texted, true);
+  // Sequential sends would show 'end email one' before 'start email two' and 'start text'.
+  assert.deepEqual(order.slice(0, 3), [`start ${OWNER_ADDRESSES[0]}`, `start ${OWNER_ADDRESSES[1]}`, 'start text']);
+  assert(order.indexOf('start text') < order.indexOf(`end ${OWNER_ADDRESSES[0]}`));
+  assert(order.indexOf(`start ${OWNER_ADDRESSES[1]}`) < order.indexOf(`end ${OWNER_ADDRESSES[0]}`));
+});
+
+test('a call whose email failed is not recorded as done, so the email is retried and the text is not sent twice', async () => {
+  const db = fakeDb(), bodies = [], texts = [];
+  const quiet = console.error; console.error = () => {};
+  try {
+    const textOnly = createFrontdeskHandler({ getDb: () => db, mail: async () => { throw new Error('webhook down'); }, text: async value => { texts.push(value); return true; }, env, now: () => new Date('2026-10-13T18:05:00.000Z') });
+    const failed = await (await textOnly.message(request(callPayload()))).json();
+    assert.deepEqual(failed.emailed, []); assert.equal(failed.texted, true); assert.equal(failed.ok, false);
+    assert.equal(db.events[0].emailed, false, 'the stored row does not claim Douglas was emailed');
+    assert.equal(db.calls.get('call-abc').emailed, false, 'and neither does the claim row');
+    assert.equal(db.calls.get('call-abc').texted, true);
+    // A later report for the same call sends the email the owner is owed, and does not text
+    // him a second time.
+    const second = handler({ db, bodies, texts });
+    const retried = await (await second.h.message(request(callPayload()))).json();
+    assert.equal(retried.duplicate, false);
+    assert.deepEqual(retried.emailed, [...OWNER_ADDRESSES]);
+    assert.equal(bodies.length, 2, 'the email was retried'); assert.equal(texts.length, 1, 'the text went out once');
+    assert.equal(db.events.length, 1); assert.equal(db.events[0].emailed, true);
+    assert.equal(db.calls.get('call-abc').emailed, true);
+    // With both channels delivered, the next report for this call is a repeat.
+    const repeat = await (await second.h.message(request(callPayload()))).json();
+    assert.equal(repeat.duplicate, true);
+    assert.equal(bodies.length, 2); assert.equal(texts.length, 1);
+  } finally { console.error = quiet; }
 });
