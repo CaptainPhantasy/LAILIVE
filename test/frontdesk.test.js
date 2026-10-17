@@ -16,6 +16,7 @@ const env = {
   SIGNALWIRE_PROJECT_ID: 'project-1234',
   SIGNALWIRE_API_TOKEN: 'messaging-token',
   FRONTDESK_SMS_FROM: '+18123400000',
+  FRONTDESK_VTEXT_ENABLED: 'true', // Legacy gateway coverage is explicit; production default is off.
 };
 function callPayload(overrides = {}) {
   return {
@@ -37,18 +38,18 @@ function callPayload(overrides = {}) {
 function fakeDb() {
   const events = [], calls = new Map();
   return { events, calls, execute: async query => {
-    const text = query.queryChunks ? query.queryChunks.map(c => c.value?.join?.('') ?? '').join('?') : String(query.sql || '');
-    const params = query.queryChunks ? query.queryChunks.filter(c => !c.value) : [];
+    const text = query.queryChunks ? query.queryChunks.map(c => c?.value?.join?.('') ?? '').join('?') : String(query.sql || '');
+    const params = query.queryChunks ? query.queryChunks.filter(c => !c?.value) : [];
     const [first, second] = params;
     if (/CREATE TABLE|CREATE INDEX/.test(text)) return { rows: [] };
     if (/INSERT INTO legacy_frontdesk_calls/.test(text)) {
       if (calls.has(first)) return { rows: [] };
-      calls.set(first, { call_id: first, event_id: null, emailed: false, texted: false, delivering: true, claimed_at: new Date(), delivered_at: null });
+      calls.set(first, { call_id: first, event_id: null, emailed: false, texted: false, text_via: null, text_status: null, delivering: true, claimed_at: new Date(), delivered_at: null });
       return { rows: [{ call_id: first }] };
     }
-    if (/SELECT call_id, event_id, emailed, texted FROM legacy_frontdesk_calls/.test(text)) {
+    if (/SELECT call_id, event_id, emailed, texted, text_via, text_status FROM legacy_frontdesk_calls/.test(text)) {
       const row = calls.get(first);
-      return { rows: row ? [{ call_id: row.call_id, event_id: row.event_id, emailed: row.emailed, texted: row.texted }] : [] };
+      return { rows: row ? [{ call_id: row.call_id, event_id: row.event_id, emailed: row.emailed, texted: row.texted, text_via: row.text_via, text_status: row.text_status }] : [] };
     }
     if (/UPDATE legacy_frontdesk_calls SET delivering = true/.test(text)) {
       const row = calls.get(first);
@@ -59,8 +60,8 @@ function fakeDb() {
     }
     if (/UPDATE legacy_frontdesk_calls SET event_id/.test(text)) { const row = calls.get(second); if (row) row.event_id = first; return { rows: [] }; }
     if (/UPDATE legacy_frontdesk_calls SET delivering = false/.test(text)) {
-      const [emailed, texted, , callId] = params, row = calls.get(callId);
-      if (row) { row.delivering = false; row.emailed ||= emailed === true; row.texted ||= texted === true; if (row.emailed) row.delivered_at ||= new Date(); }
+      const [emailed, texted, textVia, textStatus, , callId] = params, row = calls.get(callId);
+      if (row) { row.delivering = false; row.emailed ||= emailed === true; row.texted ||= texted === true; row.text_via ||= textVia; row.text_status ||= textStatus; if (row.emailed) row.delivered_at ||= new Date(); }
       return { rows: [] };
     }
     if (/INSERT INTO legacy_assistant_events/.test(text)) { const [id, kind, channel, visitor_name, contact, question, summary, conversation_id] = params; const row = { id, kind, channel, visitor_name, contact, question, summary, conversation_id, emailed: false, created_at: new Date().toISOString() }; events.push(row); return { rows: [row] }; }
@@ -148,7 +149,7 @@ test('a repeated report for the same call is acknowledged without emailing or te
   const { db, bodies, texts, h } = handler();
   await h.message(request(callPayload()));
   const repeat = await (await h.message(request(callPayload()))).json();
-  assert.deepEqual(repeat, { ok: true, duplicate: true, stored: false, emailed: [], texted: false, callId: 'call-abc', message: 'This call was already sent to Douglas; nothing was sent again.' });
+  assert.deepEqual(repeat, { ok: true, duplicate: true, stored: false, emailed: [], texted: true, textVia: 'signalwire', textStatus: 'accepted', callId: 'call-abc', message: 'This call was already sent to Douglas; nothing was sent again.' });
   assert.equal(db.events.length, 1, 'the repeated report is not stored twice');
   assert.equal(bodies.length, 3); assert.equal(texts.length, 1);
   assert.equal(bodies.filter(b => b.to === OWNER_VTEXT_ADDRESS).length, 1, 'the gateway is mailed once, for the first delivery');
@@ -323,6 +324,8 @@ test('the Vercel route exports a callable fetch handler, not the map of route na
   assert.equal(typeof route.default, 'object');
   assert.equal(typeof route.default.fetch, 'function', 'Vercel calls fetch itself, so it must be the handler rather than the object keyed by route name');
   assert.equal(route.default.fetch.length, 1, 'the exported handler is the one that takes a request');
+  const config = JSON.parse(await readFile(new URL('../vercel.json', import.meta.url), 'utf8'));
+  assert.equal(config.functions['api/frontdesk/message.js'].maxDuration, 60, 'the delivery chain has time to finish before Vercel terminates the request');
 });
 
 test('only a finished call is reported: a fetch at call start is ignored and cannot swallow the real report', async () => {
@@ -498,7 +501,7 @@ test('a delivery killed mid-flight is taken over, and a claim that is still runn
   await client.exec(`UPDATE legacy_frontdesk_calls SET emailed = false, texted = false, delivering = true, claimed_at = now() WHERE call_id = 'call-abc'`);
   const held = await (await h.message(request(callPayload()))).json();
   assert.equal(held.inFlight, true); assert.equal(held.duplicate, false);
-  assert.deepEqual(held.emailed, []); assert.equal(held.texted, false);
+  assert.deepEqual(held.emailed, []); assert.equal(held.texted, true); assert.equal(held.textVia, 'signalwire');
   assert.equal(bodies.length, 3); assert.equal(texts.length, 1);
 });
 
@@ -535,7 +538,8 @@ test('a call whose email failed is not recorded as done, so the email is retried
     const retried = await (await second.h.message(request(callPayload()))).json();
     assert.equal(retried.duplicate, false);
     assert.deepEqual(retried.emailed, [...OWNER_ADDRESSES]);
-    assert.equal(retried.textVia, 'none', 'nothing is sent on the text channel again');
+    assert.equal(retried.textVia, 'signalwire', 'the stored route remains visible although no text is sent again');
+    assert.equal(retried.texted, true);
     assert.equal(bodies.length, 2, 'the email was retried'); assert.equal(texts.length, 1, 'the text went out once');
     assert.equal(db.events.length, 1); assert.equal(db.events[0].emailed, true);
     assert.equal(db.calls.get('call-abc').emailed, true);
@@ -637,7 +641,7 @@ test('the call-id duplicate rule still holds: a repeat delivery sends nothing to
   assert.equal(bodies.length, 3); assert.equal(texts.length, 1);
   const repeat = await (await h.message(request(callPayload()))).json();
   assert.equal(repeat.duplicate, true);
-  assert.equal(repeat.texted, false); assert.deepEqual(repeat.emailed, []);
+  assert.equal(repeat.texted, true); assert.equal(repeat.textVia, 'signalwire'); assert.deepEqual(repeat.emailed, []);
   assert.equal(bodies.length, 3, 'no mail goes to either owner address or to the gateway');
   assert.equal(texts.length, 1, 'no SignalWire text is sent again');
   assert.equal(bodies.filter(sent => sent.to === OWNER_VTEXT_ADDRESS).length, 1, 'the gateway is mailed once, for the first delivery');
@@ -662,12 +666,56 @@ test('a gateway text does not stand in for the mandatory email, and is not sent 
     const retried = await (await build().message(request(callPayload()))).json();
     assert.equal(retried.duplicate, false);
     assert.deepEqual(retried.emailed, [...OWNER_ADDRESSES]);
-    assert.equal(retried.textVia, 'none', 'nothing is sent on the text channel again');
+    assert.equal(retried.textVia, 'signalwire', 'the original route remains visible on the email retry');
+    assert.equal(retried.texted, true);
     assert.equal(texts.length, 1, 'the SignalWire text went out once');
     assert.equal(bodies.filter(sent => sent.to === OWNER_VTEXT_ADDRESS).length, 1, 'the gateway mail went out once');
     assert.equal(db.events[0].emailed, true);
     assert.equal((await (await build().message(request(callPayload()))).json()).duplicate, true);
   } finally { console.error = quiet; }
+});
+
+test('queued Zapier status and route remain explicit on the owner-email retry', async t => {
+  const client = await seededDatabase(t), db = drizzle(client);
+  let emailFailure = true, textCalls = 0, zapierCalls = 0;
+  const h = createFrontdeskHandler({
+    getDb: () => db,
+    mail: async value => {
+      if (emailFailure && OWNER_ADDRESSES.includes(value.to)) throw new Error('owner email unavailable');
+      return true;
+    },
+    text: async () => { textCalls++; throw new Error('SignalWire unavailable'); },
+    zapier: async () => { zapierCalls++; return { via: 'zapier', status: 'queued', delivered: false }; },
+    env: { ...env, ZAPIER_MCP_URL: 'https://mcp.zapier.com/api/v1/connect?token=test', FRONTDESK_ZAPIER_SMS_TOOL_NAME: 'owner_sms' },
+    now: () => new Date('2026-10-13T18:05:00.000Z'),
+  });
+  const first = await (await h.message(request(callPayload()))).json();
+  assert.equal(first.textVia, 'zapier'); assert.equal(first.textStatus, 'queued'); assert.equal(first.textDelivered, false);
+  assert.match(first.message, /queued through Zapier.*unconfirmed/);
+  assert.doesNotMatch(first.message, /Douglas was texted/);
+  assert.deepEqual((await client.query('SELECT text_via,text_status FROM legacy_frontdesk_calls')).rows[0], { text_via: 'zapier', text_status: 'queued' });
+  emailFailure = false;
+  const retry = await (await h.message(request(callPayload()))).json();
+  assert.equal(retry.textVia, 'zapier'); assert.equal(retry.textStatus, 'queued'); assert.equal(retry.textDelivered, false);
+  assert.match(retry.message, /queued through Zapier.*unconfirmed/);
+  assert.doesNotMatch(retry.message, /Douglas was texted/);
+  assert.equal(textCalls, 1); assert.equal(zapierCalls, 1);
+  const duplicate = await (await h.message(request(callPayload()))).json();
+  assert.equal(duplicate.textVia, 'zapier'); assert.equal(duplicate.textStatus, 'queued'); assert.equal(duplicate.textDelivered, false);
+  assert.match(duplicate.message, /queued through Zapier.*unconfirmed/);
+});
+
+test('legacy text flags without a recorded provider route are not reported as delivery confirmation', async t => {
+  const client = await seededDatabase(t), db = drizzle(client);
+  await client.exec(`INSERT INTO legacy_frontdesk_calls (call_id, texted) VALUES ('call-abc', true)`);
+  const h = createFrontdeskHandler({
+    getDb: () => db, mail: async () => true,
+    text: async () => assert.fail('a previously claimed text must not be sent again'),
+    env, now: () => new Date('2026-10-13T18:05:00.000Z'),
+  });
+  const result = await (await h.message(request(callPayload()))).json();
+  assert.equal(result.texted, false); assert.equal(result.textVia, 'unknown'); assert.equal(result.textStatus, 'unknown');
+  assert.match(result.message, /earlier text outcome is unknown/);
 });
 
 test('the request-length and transcript caps are unaffected by the gateway copy', async () => {
@@ -686,3 +734,13 @@ test('the request-length and transcript caps are unaffected by the gateway copy'
   assert.equal((await h.message(request({ ...callPayload(), call_id: 'call-oversize', pad: 'x'.repeat(300000) }))).status, 413);
   assert.equal(bodies.length, 3); assert.equal(texts.length, 1);
 });
+
+ test('gateway is disabled by default and system instructions are not emailed', async () => {
+  const bodies = [];
+  const h = createFrontdeskHandler({ getDb: () => fakeDb(), mail: mailer(bodies), text: async () => { throw new Error('refused'); }, env: { ...env, FRONTDESK_VTEXT_ENABLED: undefined } });
+  const result = await (await h.message(request(callPayload()))).json();
+  assert.equal(result.textVia, 'none');
+  assert.deepEqual(bodies.map(x => x.to), [...OWNER_ADDRESSES]);
+  assert.ok(bodies.every(x => !x.body.includes('Answer the phone.')));
+  assert.equal(readFrontdeskMessage(callPayload()).transcript[0].role, 'system', 'raw evidence retained');
+ });
