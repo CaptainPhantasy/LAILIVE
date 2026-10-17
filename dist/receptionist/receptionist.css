@@ -1,0 +1,5 @@
+.darla-call{display:inline-flex;align-items:center;justify-content:space-between;gap:16px;min-height:48px;padding:14px 20px;background:var(--ch-ink);color:var(--ch-paper);text-decoration:none;line-height:1.4}
+.darla-call:hover{background:#28503d}
+#call-heading{margin-bottom:18px}
+.ch-error:empty{display:none}
+@media(max-width:480px){.darla-call{width:100%;font-size:1rem}#call-heading{font-size:2.15rem}}

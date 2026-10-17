@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Tell us about a job. Turn your spoken notes into an organized report, edit it, and download a polished PDF. Try Legacy AI voice-to-report.">
+  <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="LEGACY AI">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:url" content="https://legacyai.space/voice-report/">
+  <meta property="og:title" content="Speak the job. Keep your evening. · Legacy AI">
+  <meta property="og:description" content="Turn spoken or typed job notes into an organized report, edit it, and download a polished PDF.">
+  <meta property="og:image" content="https://legacyai.space/og-solutions.jpg">
+  <meta property="og:image:secure_url" content="https://legacyai.space/og-solutions.jpg">
+  <meta property="og:image:type" content="image/jpeg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Legacy AI social card: the LEGACY AI wordmark on aged paper above the line “We don’t sell technology. We sell results.” and 54 solutions · five pillars · legacyai.space">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Speak the job. Keep your evening. · Legacy AI">
+  <meta name="twitter:description" content="Turn spoken or typed job notes into an organized report, edit it, and download a polished PDF.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self'; media-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'self'">
+  <title>Speak the job. Keep your evening. · Legacy AI</title>
+  <link rel="canonical" href="https://legacyai.space/voice-report/">
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","@id":"https://legacyai.space/voice-report/#app","url":"https://legacyai.space/voice-report/","name":"Voice-to-report","applicationCategory":"BusinessApplication","browserRequirements":"Requires JavaScript","description":"Turn spoken or typed job notes into a polished, editable report and download it as a PDF.","provider":{"@id":"https://legacyai.space/#org"}},{"@type":"BreadcrumbList","@id":"https://legacyai.space/voice-report/#breadcrumb","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://legacyai.space/"},{"@type":"ListItem","position":2,"name":"Voice-to-report","item":"https://legacyai.space/voice-report/"}]}]}</script>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./voice-report.css">
+  <link rel="stylesheet" href="/lead-gate.css">
+  <script type="module" src="./voice-report.js"></script>
+</head>
+<body>
+  <a class="skip" href="#workspace">Skip to the report tool</a>
+  <header class="site-header"><a class="brand" href="/">LEGACY AI <span>SOLUTIONS</span></a><nav aria-label="Main navigation"><a href="/receptionist/">Meet Darla</a><a href="/board/">The Board</a><a href="/solutions/">All solutions</a></nav></header>
+  <main>
+    <section class="hero" aria-labelledby="title">
+      <p class="eyebrow">YOUR VOICE. YOUR WORK. YOUR REPORT.</p>
+      <h1 id="title">The job’s done.<br><em>So is the paperwork.</em></h1>
+      <div class="hero-bottom"><p>Tell us what happened on a job. Get an organized report you can edit, download, and keep. No account. No new software to learn.</p><ol aria-label="How it works"><li><b>01</b> Say it</li><li><b>02</b> Review it</li><li><b>03</b> Take it with you</li></ol></div>
+    </section>
+
+    <noscript><p class="error">Please enable JavaScript to turn your notes into a report.</p></noscript>
+    <section id="workspace" class="workspace" aria-label="Create your job report">
+      <div class="notes-panel">
+        <div class="panel-heading"><span class="eyebrow">01 / THE JOB, IN YOUR WORDS</span><span class="live-dot" aria-hidden="true"></span></div>
+        <h2>Just talk it through.</h2>
+        <p class="hint">Where were you? What did you find? What did you do, and what happens next?</p>
+        <button id="dictate" type="button" class="dictate" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="9" y="2" width="6" height="13" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3M8 22h8"/></svg><span id="dictate-label">Start talking</span><span id="timer" aria-hidden="true"></span></button>
+        <p id="speech-status" class="small" role="status">Prefer typing? Your notes work just as well.</p>
+        <p id="interim" class="interim" aria-live="off" hidden></p>
+        <form id="report-form">
+          <label class="note-label" for="notes">Your job notes</label>
+          <textarea id="notes" name="notes" rows="9" minlength="35" maxlength="6000" placeholder="We went out to a customer’s property this morning. Here’s what we found…" required aria-describedby="notes-help note-count"></textarea>
+          <div class="note-bottom"><button id="example" class="text-button" type="button">Need an idea? Try a sample note</button><span id="note-count" class="small">0 / 6,000</span></div>
+          <p id="notes-help" class="small">Keep names and measurements accurate. You can change anything before downloading.</p>
+          <button id="generate" type="submit" class="primary generate">Make my report <span aria-hidden="true">↗</span></button>
+        </form>
+        <p id="generation-status" class="status" role="status" hidden></p>
+        <p id="error" class="error" role="alert" hidden></p>
+        <details class="privacy"><summary>How your notes are handled</summary><p>Your browser’s speech service turns your voice into text. Choose “Make my report” to send those notes for writing and a check against your original details. Review and edit your report here, then download the PDF to keep or share before leaving the page.</p></details>
+      </div>
+
+      <div class="result-panel">
+        <div id="empty-report" class="empty-report">
+          <div class="paper-icon" aria-hidden="true"><svg viewBox="0 0 110 130" fill="none"><path d="M21 6h49l21 23v91H21z" stroke="currentColor" stroke-width="1.5"/><path d="M69 6v24h22M34 50h44M34 63h44M34 76h29M34 99h17" stroke="currentColor" stroke-width="1.5"/></svg></div>
+          <p class="eyebrow">LESS ADMIN. MORE EVENING.</p><h2>Your work deserves<br>a proper finish.</h2><p>Your report will appear here, organized around the details you provide. Review it, make it yours, and take the PDF with you.</p>
+          <div class="output-types"><span>Clear findings</span><span>Work completed</span><span>Next steps</span></div>
+        </div>
+        <div id="report-result" hidden>
+          <div class="result-toolbar"><div><p class="eyebrow">02 / YOUR REPORT</p><p class="small">Click any field to edit before downloading.</p></div><span class="ready-tag">Ready to review</span></div>
+          <article id="report-paper" class="report-paper" aria-label="Editable job report">
+            <div class="paper-brand"><strong>LEGACY AI</strong><span>VOICE TO REPORT</span></div>
+            <label class="sr-only" for="report-title">Report title</label><input id="report-title" class="report-title" maxlength="140" value="Job report" required>
+            <div id="metadata" class="metadata"></div>
+            <details id="add-details" class="add-details"><summary>Add or edit a name, address, or visit date</summary><div id="metadata-extra" class="metadata"></div></details>
+            <div id="report-sections"></div>
+            <div class="add-section"><label for="section-choice" class="sr-only">Add a report section</label><select id="section-choice"><option value="">Add a section…</option></select><button id="section-add" type="button" class="text-button">Add</button></div>
+            <div class="paper-footer">Prepared with Legacy AI · legacyai.space</div>
+          </article>
+          <div class="download-row"><button id="download" type="button" class="primary">Download my PDF <span aria-hidden="true">↓</span></button><p class="small">Check names, dates and measurements before sharing.</p></div>
+          <p id="download-status" class="status" role="status" hidden></p>
+          <p id="download-error" class="error" role="alert" hidden></p>
+        </div>
+      </div>
+    </section>
+    <section class="closing" aria-labelledby="closing-heading"><div><p class="eyebrow">THAT WAS ONE JOB. IMAGINE EVERY JOB.</p><h2 id="closing-heading">Give the paperwork<br>someone else’s evening.</h2><p>Your voice, your branding, your approval. Talk to Douglas about putting reports to work in your business.</p></div><div class="closing-action"><button id="discuss" type="button" class="light-button">I want this for my business <span aria-hidden="true">↗</span></button><a href="tel:+18124123454">Or call Darla: 812-412-3454</a><p id="discuss-status" role="status"></p></div></section>
+  </main>
+  <footer><a class="brand" href="/">LEGACY AI</a><p>We do the technology. You get the results.</p><a href="mailto:douglas@legacyai.space">douglas@legacyai.space</a></footer>
+</body>
+</html>

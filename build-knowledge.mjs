@@ -16,7 +16,7 @@ export function pageText(html) {
   s = s.replace(/<h([1-6])[^>]*>/gi, '\n\n## ').replace(/<\/(p|li|h[1-6]|div|article|section|dt|dd)>/gi, '\n').replace(/<br\s*\/?>/gi, '\n');
   return decode(s.replace(/<[^>]+>/g, ' ')).replace(/[ \t]+/g, ' ').replace(/ *\n */g, '\n').replace(/\n{3,}/g, '\n\n').replace(/## \n+/g, '## ').trim();
 }
-const out = ['# Legacy AI website knowledge', 'Generated from the public pages of legacyai.space. Founder: Douglas Talley, Brown County, Indiana. Phone (812) 412-3454. Email douglas@legacyai.space.', ''];
+const out = ['# Legacy AI website knowledge', 'Generated from the public pages of legacyai.space. Founder: Douglas Talley, Brown County, Indiana. Phone 812-412-3454. Email douglas@legacyai.space.', ''];
 for (const [title, url] of pages) out.push(`# PAGE: ${title} (https://legacyai.space${url})`, '', pageText(fs.readFileSync(path.join(root, url, 'index.html'), 'utf8')), '');
 out.push('# FULL SERVICE CATALOG AND HOW ENGAGEMENTS WORK', '', fs.readFileSync(path.join(root, 'llms-full.txt'), 'utf8'));
 fs.writeFileSync(path.join(root, 'site-knowledge.txt'), out.join('\n'));
