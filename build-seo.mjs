@@ -42,8 +42,8 @@ Legacy AI is led by founder Douglas Talley and based in Brown County, Indiana. E
 - [Contact-list health check](${site}/contact-health/): A browser tool that reviews a customer CSV for missing details, duplicate rows and conflicting contact information.
 - [Darla, the Legacy AI receptionist](${site}/receptionist/): The receptionist who never calls in works here, too. Meet Darla: call Legacy AI at 812-412-3454 and hear her in action.
 - [Voice-to-report](${site}/voice-report/): Speak or type job notes, review and edit a polished report, and download the PDF.
-- [Live booking calendar preview](${site}/booking/): Turns business hours, buffers and an existing .ics calendar into the open times customers would be offered, on the visitor's device.
-- [Missed-call text-back builder](${site}/missed-call/): Drafts missed-call text-backs in English and Spanish with SMS segment counts and carrier-friendly checks.
+- [Booking without the back-and-forth](${site}/booking/): Talk to Darla about a booking flow built around your business, or explore the optional schedule planner.
+- [Missed-call recovery](${site}/missed-call/): Keep the next customer in the conversation. Talk to Darla about follow-up, or draft messages for your business.
 
 ## Live client sites
 - [Precision Sewer Inspections](https://precisionsewerinspections.com/): Sewer scope inspections across Central Indiana with online booking and one-business-day HD video reports.
@@ -89,8 +89,8 @@ ${catalog.services.map(s => `- ${s.name} (${s.tag}): ${s.body}`).join('\n')}
 - Contact-list health check: ${site}/contact-health/
 - Darla, the Legacy AI receptionist: ${site}/receptionist/
 - Voice-to-report: ${site}/voice-report/ — speak or type job notes, review and edit a polished report, and download the PDF.
-- Live booking calendar preview: ${site}/booking/
-- Missed-call text-back builder: ${site}/missed-call/
+- Booking without the back-and-forth: ${site}/booking/
+- Missed-call recovery: ${site}/missed-call/
 
 ## Live client sites
 - Precision Sewer Inspections: https://precisionsewerinspections.com/ — sewer scope inspections across Central Indiana with online booking and one-business-day HD video reports.

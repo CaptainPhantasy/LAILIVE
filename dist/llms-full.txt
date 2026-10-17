@@ -79,8 +79,8 @@ Auto body & collision; plumbers, HVAC and contractors; chiropractic & wellness; 
 - Contact-list health check: https://legacyai.space/contact-health/
 - Darla, the Legacy AI receptionist: https://legacyai.space/receptionist/
 - Voice-to-report: https://legacyai.space/voice-report/ — speak or type job notes, review and edit a polished report, and download the PDF.
-- Live booking calendar preview: https://legacyai.space/booking/
-- Missed-call text-back builder: https://legacyai.space/missed-call/
+- Booking without the back-and-forth: https://legacyai.space/booking/
+- Missed-call recovery: https://legacyai.space/missed-call/
 
 ## Live client sites
 - Precision Sewer Inspections: https://precisionsewerinspections.com/ — sewer scope inspections across Central Indiana with online booking and one-business-day HD video reports.

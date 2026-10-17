@@ -37,6 +37,12 @@
     "api/frontdesk/message.js": {
       "maxDuration": 60
     },
+    "api/frontdesk/booking.js": {
+      "maxDuration": 60
+    },
+    "api/frontdesk/missed-call.js": {
+      "maxDuration": 30
+    },
     "api/voice-report.js": {
       "maxDuration": 60
     },

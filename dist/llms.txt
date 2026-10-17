@@ -13,8 +13,8 @@ Legacy AI is led by founder Douglas Talley and based in Brown County, Indiana. E
 - [Contact-list health check](https://legacyai.space/contact-health/): A browser tool that reviews a customer CSV for missing details, duplicate rows and conflicting contact information.
 - [Darla, the Legacy AI receptionist](https://legacyai.space/receptionist/): The receptionist who never calls in works here, too. Meet Darla: call Legacy AI at 812-412-3454 and hear her in action.
 - [Voice-to-report](https://legacyai.space/voice-report/): Speak or type job notes, review and edit a polished report, and download the PDF.
-- [Live booking calendar preview](https://legacyai.space/booking/): Turns business hours, buffers and an existing .ics calendar into the open times customers would be offered, on the visitor's device.
-- [Missed-call text-back builder](https://legacyai.space/missed-call/): Drafts missed-call text-backs in English and Spanish with SMS segment counts and carrier-friendly checks.
+- [Booking without the back-and-forth](https://legacyai.space/booking/): Talk to Darla about a booking flow built around your business, or explore the optional schedule planner.
+- [Missed-call recovery](https://legacyai.space/missed-call/): Keep the next customer in the conversation. Talk to Darla about follow-up, or draft messages for your business.
 
 ## Live client sites
 - [Precision Sewer Inspections](https://precisionsewerinspections.com/): Sewer scope inspections across Central Indiana with online booking and one-business-day HD video reports.
