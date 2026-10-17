@@ -45,7 +45,7 @@ test('failed owner review emails retry for the existing draft and PDF validation
  const handlers = createOwnerDocumentHandler({ getDb: () => db, env, mail: async value => { attempts.push(value); if (attempts.length <= 2) throw new Error('mail unavailable'); } });
  try {
   const verified = await (await handlers.owner(req({ call: { call_id: 'call-review', from: '+18123405761' }, vars: { prompt_value: '123456' } }))).json();
-  const tool = verified.sections.main[1].ai.SWAIG.functions[0];
+  const tool = verified.sections.main.find(step=>step.ai).ai.SWAIG.functions[0];
   const badTitle = { call_id: 'call-review', arguments: { kind: 'quote', title: '“PDF title”', content: 'Price pending', recipient: 'customer@example.test' } };
   assert.equal((await handlers.owner(req(badTitle, tool.web_hook_url, false))).status, 400);
   const draft = { call_id: 'call-review', arguments: { kind: 'quote', title: 'PDF title', content: 'Price: “pending”', recipient: 'customer@example.test' } };
