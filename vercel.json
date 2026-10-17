@@ -21,7 +21,7 @@
       "maxDuration": 30
     },
     "api/frontdesk/message.js": {
-      "maxDuration": 30
+      "maxDuration": 60
     }
   },
   "headers": [
