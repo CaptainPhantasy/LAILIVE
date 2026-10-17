@@ -41,6 +41,19 @@ BOOKING_ZAPIER_GET_TOOL and BOOKING_ZAPIER_WRITE_TOOL only after those actions a
 authorized and configured. The existing Calendar account is used; no credential
 rotation or new Google account is needed.
 
+## Calendar isolation
+
+The owner approved calendar access on October 17, 2026, conditional on keeping
+PSI bookings separate. A dedicated **Legacy AI — Darla bookings** calendar was
+created in the existing connected account. Its exact ID is pinned by
+`LEGACY_BOOKING_CALENDAR_ID` in the provider; `BOOKING_CALENDAR_ID` must match.
+The preview branch setting is configured with that ID. Missing, primary or any
+other calendar setting disables all calendar calls before network access.
+Availability, event creation and receipt lookup use only this dedicated calendar.
+No PSI calendar events, settings, phone routes or production settings were changed.
+The application runtime Calendar action still needs enabling and a real booking
+and invitation still need verification before phone booking is advertised.
+
 SignalWire readback found the existing campaign still Pending. The two additional
 owned numbers remain assigned to PSI resources: 812-998-8227 to its record/SIP
 forwarding flow, and 812-407-0607 to a SIP credential. Neither was reassigned.

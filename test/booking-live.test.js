@@ -3,14 +3,14 @@ import assert from 'node:assert/strict';
 import { PGlite } from '@electric-sql/pglite';
 import { drizzle } from 'drizzle-orm/pglite';
 import { createLiveBooking, createLiveBookingHandler } from '../lib/booking-live.js';
-import { createBookingCalendarProvider } from '../lib/booking-live-provider.js';
+import { createBookingCalendarProvider, LEGACY_BOOKING_CALENDAR_ID } from '../lib/booking-live-provider.js';
 import { bookingSwaigFunctions } from '../lib/booking-live-swaig.js';
 
 const time = Date.parse('2026-10-17T19:00:00Z');
 const details = { slotStart: '2026-10-19T16:00:00Z', name: 'Test Caller', email: 'TEST@example.com', phone: '+18125550123', requestId: 'call-123:slot1', approved: true };
 function fakeProvider() {
   const events = new Map();
-  const provider = { configured: true, calendarId: 'owner@example.com', calls: [], busy: async () => [...events.values()].filter(event => event.status === 'confirmed').map(event => ({ start: event.start.dateTime, end: event.end.dateTime })),
+  const provider = { configured: true, calendarId: LEGACY_BOOKING_CALENDAR_ID, calls: [], busy: async () => [...events.values()].filter(event => event.status === 'confirmed').map(event => ({ start: event.start.dateTime, end: event.end.dateTime })),
     insert: async event => { provider.calls.push(event); const saved = { ...event, kind: 'calendar#event', status: 'confirmed' }; events.set(event.id, saved); return saved; },
     get: async id => { if (!events.has(id)) throw new Error('Not found'); return events.get(id); }, events };
   return provider;
@@ -127,7 +127,7 @@ test('SWAIG endpoint authenticates before database use and never exposes arbitra
 test('calendar provider uses exact API calls and accepts observed Zapier resource envelope only', async () => {
   const calls = [];
   const properties = Object.fromEntries(['url', 'fail_on_errors', 'headers', 'querystring', 'body', 'method'].map(name => [name, {}]));
-  const env = { BOOKING_ZAPIER_MCP_URL: 'https://mcp.zapier.com/api/mcp/test', BOOKING_ZAPIER_GET_TOOL: 'google_get', BOOKING_ZAPIER_WRITE_TOOL: 'google_write', BOOKING_CALENDAR_ID: 'owner@example.com' };
+  const env = { BOOKING_ZAPIER_MCP_URL: 'https://mcp.zapier.com/api/mcp/test', BOOKING_ZAPIER_GET_TOOL: 'google_get', BOOKING_ZAPIER_WRITE_TOOL: 'google_write', BOOKING_CALENDAR_ID: LEGACY_BOOKING_CALENDAR_ID };
   let responseResource;
   const fetcher = async (_url, init) => {
     const rpc = JSON.parse(init.body); calls.push(rpc);
@@ -141,16 +141,17 @@ test('calendar provider uses exact API calls and accepts observed Zapier resourc
     return Response.json({ jsonrpc: '2.0', id: rpc.id, result });
   };
   const provider = createBookingCalendarProvider({ env, fetcher });
-  responseResource = { kind: 'calendar#freeBusy', calendars: { 'owner@example.com': { busy: [] } } };
+  responseResource = { kind: 'calendar#freeBusy', calendars: { [LEGACY_BOOKING_CALENDAR_ID]: { busy: [] } } };
   assert.deepEqual(await provider.busy('2026-10-19T16:00:00Z', '2026-10-19T20:00:00Z'), []);
   assert.deepEqual(calls.slice(0, 3).map(call => call.method), ['initialize', 'notifications/initialized', 'tools/list']);
   let action = calls.at(-1).params.arguments;
   assert.equal(action.url, 'https://www.googleapis.com/calendar/v3/freeBusy'); assert.equal(action.method, 'POST');
-  assert.deepEqual(JSON.parse(action.body).items, [{ id: 'owner@example.com' }]);
+  assert.deepEqual(JSON.parse(action.body).items, [{ id: LEGACY_BOOKING_CALENDAR_ID }]);
   responseResource = { kind: 'calendar#event', id: 'abc123', status: 'confirmed' };
   await provider.insert({ id: 'abc123' }); action = calls.at(-1).params.arguments;
-  assert.equal(action.url, 'https://www.googleapis.com/calendar/v3/calendars/owner%40example.com/events?sendUpdates=all');
+  assert.equal(action.url, `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(LEGACY_BOOKING_CALENDAR_ID)}/events?sendUpdates=all`);
   await provider.get('abc123'); assert.equal(calls.at(-1).params.name, 'google_get');
+  assert.equal(calls.at(-1).params.arguments.url, `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(LEGACY_BOOKING_CALENDAR_ID)}/events/abc123`);
   responseResource = { message: 'Success! Appointment booked!' };
   await assert.rejects(provider.get('abc123'), /verifiable resource/);
   const previousCalls = calls.length;
@@ -169,7 +170,7 @@ test('missing runtime calendar connection reports unavailable and tool definitio
 
 test('one generic Zapier API tool supplies its required HTTP method for both GET and POST', async () => {
   const actions = [];
-  const env = { BOOKING_ZAPIER_MCP_URL: 'https://mcp.zapier.com/api/mcp/test', BOOKING_ZAPIER_GET_TOOL: 'google_api_request', BOOKING_ZAPIER_WRITE_TOOL: 'google_api_request' };
+  const env = { BOOKING_ZAPIER_MCP_URL: 'https://mcp.zapier.com/api/mcp/test', BOOKING_ZAPIER_GET_TOOL: 'google_api_request', BOOKING_ZAPIER_WRITE_TOOL: 'google_api_request', BOOKING_CALENDAR_ID: LEGACY_BOOKING_CALENDAR_ID };
   const fetcher = async (_url, init) => {
     const rpc = JSON.parse(init.body);
     if (rpc.method === 'notifications/initialized') return new Response(null, { status: 202 });
@@ -189,4 +190,19 @@ test('one generic Zapier API tool supplies its required HTTP method for both GET
   assert.deepEqual(actions.map(action => action.arguments.method), ['GET', 'POST']);
   assert.equal('body' in actions[0].arguments, false);
   assert.deepEqual(JSON.parse(actions[1].arguments.body), { id: 'abc123' });
+});
+
+
+test('calendar isolation rejects missing, primary and every other calendar before any network request', async () => {
+  for (const calendarId of [undefined, '', 'primary', 'owner@example.com', `${'a'.repeat(64)}@group.calendar.google.com`, `${LEGACY_BOOKING_CALENDAR_ID} `]) {
+    let fetches = 0;
+    const env = { BOOKING_ZAPIER_MCP_URL: 'https://mcp.zapier.com/api/mcp/test', BOOKING_ZAPIER_GET_TOOL: 'google_get', BOOKING_ZAPIER_WRITE_TOOL: 'google_write', ...(calendarId === undefined ? {} : { BOOKING_CALENDAR_ID: calendarId }) };
+    const provider = createBookingCalendarProvider({ env, fetcher: async () => { fetches++; throw new Error('No calendar request is permitted.'); } });
+    assert.equal(provider.configured, false);
+    assert.equal(provider.calendarId, LEGACY_BOOKING_CALENDAR_ID);
+    await assert.rejects(provider.busy('2026-10-19T16:00:00Z', '2026-10-19T20:00:00Z'), /dedicated Legacy AI booking calendar is not configured/);
+    await assert.rejects(provider.insert({ id: 'abc123' }), /dedicated Legacy AI booking calendar is not configured/);
+    await assert.rejects(provider.get('abc123'), /dedicated Legacy AI booking calendar is not configured/);
+    assert.equal(fetches, 0);
+  }
 });
