@@ -55,3 +55,13 @@ test('owner PIN setup requires owner sign-in and stores only a salted hash', asy
   const stored=await ownerPinHash(db);assert.ok(!stored.includes('619247'));assert.ok(verifyOwnerPin('619247',stored));assert.equal(verifyOwnerPin('999999',stored),false);
  }finally{await pg.close();}
 });
+
+test('one-time PIN setup expires, rejects wrong setup key and cannot overwrite an existing PIN', async()=>{
+ const {createHash}=await import('node:crypto');
+ const {createOwnerPinHandler}=await import('../lib/owner-pin.js');
+ const pg=new PGlite();const db=drizzle(pg);
+ const env={FRONTDESK_PIN_SETUP_HASH:createHash('sha256').update('test-only-setup').digest('hex'),FRONTDESK_PIN_SETUP_EXPIRES:String(Date.now()+60000)};
+ const handler=createOwnerPinHandler({getDb:()=>db,env,authorize:async()=>{const e=new Error();e.status=401;throw e;}});
+ const req=key=>new Request('https://example.com/api/owner/pin',{method:'POST',headers:{'x-owner-pin-setup':key},body:JSON.stringify({pin:'619247',confirm:'619247'})});
+ try{assert.equal((await handler(req('wrong'))).status,401);assert.equal((await handler(req('test-only-setup'))).status,200);assert.equal((await handler(req('test-only-setup'))).status,409);env.FRONTDESK_PIN_SETUP_EXPIRES='1';assert.equal((await handler(req('test-only-setup'))).status,401);}finally{await pg.close();}
+});
