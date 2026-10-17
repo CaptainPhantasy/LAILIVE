@@ -36,6 +36,15 @@
     },
     "api/frontdesk/message.js": {
       "maxDuration": 30
+    },
+    "api/frontdesk/sms.js": {
+      "maxDuration": 30
+    },
+    "api/frontdesk/owner.js": {
+      "maxDuration": 60
+    },
+    "api/frontdesk/document.js": {
+      "maxDuration": 60
     }
   },
   "headers": [
