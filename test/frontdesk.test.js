@@ -41,7 +41,7 @@ function fakeDb() {
     const text = query.queryChunks ? query.queryChunks.map(c => c.value?.join?.('') ?? '').join('?') : String(query.sql || '');
     const params = query.queryChunks ? query.queryChunks.filter(c => !c.value) : [];
     const [first, second] = params;
-    if (/CREATE TABLE|CREATE INDEX/.test(text)) return { rows: [] };
+    if (/CREATE TABLE|CREATE INDEX|ALTER TABLE/.test(text)) return { rows: [] };
     if (/INSERT INTO legacy_frontdesk_calls/.test(text)) {
       if (calls.has(first)) return { rows: [] };
       calls.set(first, { call_id: first, event_id: null, emailed: false, texted: false, delivering: true, claimed_at: new Date(), delivered_at: null });
@@ -383,6 +383,7 @@ test('call times sent as Unix microseconds become real call times', () => {
   assert.equal(readFrontdeskMessage(callPayload({ call_start_date: 1791900000000 })).startedAt, '2026-10-13T14:00:00.000Z');
   assert.equal(readFrontdeskMessage(callPayload({ call_start_date: 1791900000 })).startedAt, '2026-10-13T14:00:00.000Z');
   assert.equal(readFrontdeskMessage(callPayload({ call_start_date: 'not a date' })).startedAt, '');
+  assert.equal(readFrontdeskMessage(callPayload({ call_start_date: 1e20 })).startedAt, '');
   assert.equal(readFrontdeskMessage(callPayload({ call_end_date: 0 })).endedAt, '');
 });
 

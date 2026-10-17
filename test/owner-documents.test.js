@@ -26,7 +26,7 @@ test('PIN owner draft PDF edit and explicit approval use durable records with no
   const pdf = await handlers.document(new Request(link + '&pdf=1')); assert.equal(pdf.headers.get('content-type'), 'application/pdf');
   const edit = new FormData(); edit.set('action', 'edit'); edit.set('content', 'Corrected report.');
   assert.equal((await handlers.document(new Request(link, { method: 'POST', body: edit }))).status, 303);
-  const approve = new FormData(); approve.set('action', 'approve');
+  const approve = new FormData(); approve.set('action', 'approve'); approve.set('content', 'Corrected report.');
   assert.equal((await handlers.document(new Request(link, { method: 'POST', body: approve }))).status, 303);
   assert.equal(sent[2].to, 'customer@example.test'); assert.match(sent[2].body, /Corrected report/);
   assert.equal((await handlers.document(new Request(link, { method: 'POST', body: approve }))).status, 409);
