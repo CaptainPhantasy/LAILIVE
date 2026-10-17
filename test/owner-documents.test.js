@@ -41,3 +41,17 @@ test('missing configured PIN fails closed', async () => {
  assert.ok(!JSON.stringify(result).includes('save_owner_draft'));
  } finally { await pg.close(); }
 });
+
+test('owner PIN setup requires owner sign-in and stores only a salted hash', async () => {
+ const {createOwnerPinHandler,ownerPinHash}=await import('../lib/owner-pin.js');
+ const {verifyOwnerPin}=await import('../lib/owner-documents-core.js');
+ const pg=new PGlite();const db=drizzle(pg);
+ try {
+  const handler=createOwnerPinHandler({getDb:()=>db,authorize:async r=>{if(r.headers.get('authorization')!=='Bearer owner'){const e=new Error();e.status=401;throw e;}}});
+  const req=(authorization,pin='619247',confirm=pin)=>new Request('https://example.com/api/owner/pin',{method:'POST',headers:{authorization},body:JSON.stringify({pin,confirm})});
+  assert.equal((await handler(req(''))).status,401);
+  assert.equal((await handler(req('Bearer owner','619247','999999'))).status,400);
+  assert.equal((await handler(req('Bearer owner'))).status,200);
+  const stored=await ownerPinHash(db);assert.ok(!stored.includes('619247'));assert.ok(verifyOwnerPin('619247',stored));assert.equal(verifyOwnerPin('999999',stored),false);
+ }finally{await pg.close();}
+});

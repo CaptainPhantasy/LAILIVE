@@ -7,7 +7,7 @@ test('owner SMS initializes MCP and invokes only configured tool without a calle
   const send = createZapierOwnerTexter({ env, fetcher: async (url, init) => { const request = JSON.parse(init.body); calls.push(request); return Response.json({ jsonrpc: '2.0', id: request.id, result: request.method === 'initialize' ? { protocolVersion: '2024-11-05' } : request.method === 'tools/list' ? { tools: [{ name: 'owner_sms' }] } : { content: [{ type: 'text', text: 'queued' }] } }); } });
   assert.deepEqual(await send({ to: '+19999999999', body: 'Owner report' }), { via: 'zapier', status: 'queued', delivered: false });
   assert.equal(calls[0].method, 'initialize');
-  assert.deepEqual(calls[2].params, { name: 'owner_sms', arguments: { message: 'Owner report' } });
+  assert.deepEqual(calls[2].params, { name: 'owner_sms', arguments: { message: 'Owner report', output_hint: 'Return the message id, status, to and error details. A queued status is not delivery confirmation.' } });
 });
 test('configuration, provider errors and action errors fail closed', async () => {
   await assert.rejects(createZapierOwnerTexter({ env: {} })({ body: 'test' }), /not configured/);
