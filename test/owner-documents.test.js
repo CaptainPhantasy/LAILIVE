@@ -15,7 +15,8 @@ test('PIN owner draft PDF edit and explicit approval use durable records with no
   const denied = await (await handlers.owner(req({ call: { call_id: 'call-owner', from: '+19999999999' }, vars: { prompt_value: '123456' } }))).json();
   assert.ok(!JSON.stringify(denied).includes('save_owner_draft'));
   const verified = await (await handlers.owner(req({ call: { call_id: 'call-owner', from: '+18123405761' }, vars: { prompt_value: '123456' } }))).json();
-  const tool = verified.sections.main[1].ai.SWAIG.functions[0];
+  assert.ok(verified.sections.main.find(step=>step.record_call));
+  const tool = verified.sections.main.find(step=>step.ai).ai.SWAIG.functions[0];
   assert.ok(!JSON.stringify(verified).includes('123456'));
   const draft = { call_id: 'call-owner', arguments: { kind: 'field_report', title: 'Test report', content: 'Inspected the entrance. No damage observed.', recipient: 'customer@example.test' } };
   const saved = await (await handlers.owner(req(draft, tool.web_hook_url, false))).json();
