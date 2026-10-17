@@ -16,6 +16,7 @@ const env = {
   SIGNALWIRE_PROJECT_ID: 'project-1234',
   SIGNALWIRE_API_TOKEN: 'messaging-token',
   FRONTDESK_SMS_FROM: '+18123400000',
+  FRONTDESK_VTEXT_ENABLED: 'true', // Legacy gateway coverage is explicit; production default is off.
 };
 function callPayload(overrides = {}) {
   return {
@@ -686,3 +687,13 @@ test('the request-length and transcript caps are unaffected by the gateway copy'
   assert.equal((await h.message(request({ ...callPayload(), call_id: 'call-oversize', pad: 'x'.repeat(300000) }))).status, 413);
   assert.equal(bodies.length, 3); assert.equal(texts.length, 1);
 });
+
+ test('gateway is disabled by default and system instructions are not emailed', async () => {
+  const bodies = [];
+  const h = createFrontdeskHandler({ getDb: () => fakeDb(), mail: mailer(bodies), text: async () => { throw new Error('refused'); }, env: { ...env, FRONTDESK_VTEXT_ENABLED: undefined } });
+  const result = await (await h.message(request(callPayload()))).json();
+  assert.equal(result.textVia, 'none');
+  assert.deepEqual(bodies.map(x => x.to), [...OWNER_ADDRESSES]);
+  assert.ok(bodies.every(x => !x.body.includes('Answer the phone.')));
+  assert.equal(readFrontdeskMessage(callPayload()).transcript[0].role, 'system', 'raw evidence retained');
+ });
