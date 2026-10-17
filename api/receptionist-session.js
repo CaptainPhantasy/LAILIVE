@@ -1,2 +1,3 @@
 import { createNativeReceptionistSession } from '../lib/receptionist-native.js';
-export default { fetch: createNativeReceptionistSession() };
+import { getStore } from '../lib/concierge/database.js';
+export default { fetch: createNativeReceptionistSession({ getStore }) };

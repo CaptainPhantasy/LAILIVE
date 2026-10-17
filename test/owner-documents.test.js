@@ -68,6 +68,45 @@ test('failed owner review emails retry for the existing draft and PDF validation
   assert.equal((await handlers.document(new Request(link + '&pdf=1'))).status, 200);
  } finally { await pg.close(); }
 });
+test('multiline drafts approve across CRLF and LF line endings while unsaved edits still conflict', async () => {
+ const pg = new PGlite(); const db = drizzle(pg); const sent = [];
+ const handlers = createOwnerDocumentHandler({ getDb: () => db, env, mail: async value => sent.push(value) });
+ try {
+  const verified = await (await handlers.owner(req({ call: { call_id: 'call-crlf', from: '+18123405761' }, vars: { prompt_value: '123456' } }))).json();
+  const tool = verified.sections.main.find(step=>step.ai).ai.SWAIG.functions[0];
+  const draft = { call_id: 'call-crlf', arguments: { kind: 'field_report', title: 'Multiline report', content: 'Line one.\nLine two.', recipient: 'customer@example.test' } };
+  const saved = await (await handlers.owner(req(draft, tool.web_hook_url, false))).json();
+  assert.match(saved.response, /review link was emailed/);
+  const link = sent[0].body.match(/https:\/\/legacyai\.space\/api\/frontdesk\/document\?token=\S+/)[0];
+  const unsaved = new FormData(); unsaved.set('action', 'approve'); unsaved.set('version', '1'); unsaved.set('title', 'Multiline report'); unsaved.set('content', 'Line one.\r\nUnsaved wording.');
+  assert.equal((await handlers.document(new Request(link, { method: 'POST', body: unsaved }))).status, 409);
+  const edit = new FormData(); edit.set('action', 'edit'); edit.set('version', '1'); edit.set('title', 'Multiline report'); edit.set('content', 'Line one.\r\nLine three.');
+  assert.equal((await handlers.document(new Request(link, { method: 'POST', body: edit }))).status, 303);
+  assert.equal((await pg.query('SELECT content FROM legacy_owner_documents')).rows[0].content, 'Line one.\nLine three.');
+  const stale = new FormData(); stale.set('action', 'approve'); stale.set('version', '1'); stale.set('title', 'Multiline report'); stale.set('content', 'Line one.\r\nLine three.');
+  assert.equal((await handlers.document(new Request(link, { method: 'POST', body: stale }))).status, 409);
+  const approve = new FormData(); approve.set('action', 'approve'); approve.set('version', '2'); approve.set('title', 'Multiline report'); approve.set('content', 'Line one.\r\nLine three.');
+  assert.equal((await handlers.document(new Request(link, { method: 'POST', body: approve }))).status, 303);
+  assert.equal(sent[2].to, 'customer@example.test'); assert.ok(sent[2].body.includes('Line one.\nLine three.'));
+ } finally { await pg.close(); }
+});
+
+test('concurrent identical owner drafts notify each owner address exactly once', async () => {
+ const pg = new PGlite(); const db = drizzle(pg); const sent = [];
+ const handlers = createOwnerDocumentHandler({ getDb: () => db, env, mail: async value => sent.push(value) });
+ try {
+  const verified = await (await handlers.owner(req({ call: { call_id: 'call-race', from: '+18123405761' }, vars: { prompt_value: '123456' } }))).json();
+  const tool = verified.sections.main.find(step=>step.ai).ai.SWAIG.functions[0];
+  const draft = { call_id: 'call-race', arguments: { kind: 'quote', title: 'Race report', content: 'Concurrent save.', recipient: 'customer@example.test' } };
+  const responses = await Promise.all([handlers.owner(req(draft, tool.web_hook_url, false)), handlers.owner(req(draft, tool.web_hook_url, false))]);
+  assert.ok(responses.every(response => response.status === 200));
+  assert.deepEqual(sent.map(mail => mail.to).sort(), [...OWNER_ADDRESSES].sort());
+  assert.equal(new Set(sent.map(mail => mail.to)).size, sent.length);
+  assert.equal((await pg.query('SELECT count(*)::int AS n FROM legacy_owner_documents')).rows[0].n, 1);
+  assert.deepEqual([...(await pg.query('SELECT notified_to FROM legacy_owner_documents')).rows[0].notified_to].sort(), [...OWNER_ADDRESSES].sort());
+ } finally { await pg.close(); }
+});
+
 test('missing configured PIN fails closed', async () => {
  const pg = new PGlite(); const db = drizzle(pg);
  try {

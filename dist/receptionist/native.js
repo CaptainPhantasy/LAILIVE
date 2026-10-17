@@ -1,9 +1,14 @@
 import { startBrowserVoice } from './signalwire-browser.js';
+import { browserCallingEnabled } from './browser-calling.js';
 
 const start = document.getElementById('start'), hangup = document.getElementById('hang-up');
 const status = document.getElementById('status'), error = document.getElementById('error');
 const audio = document.getElementById('voice-audio'), consent = document.getElementById('consent');
 let active;
+const browserCalling = browserCallingEnabled(window.location.hostname);
+// Production has no guest voice line: the phone call stays the only way to
+// reach Darla, so the panel goes away and no session is ever requested.
+start.closest('.ch-panel').hidden = !browserCalling;
 function finish(attempt, message) {
   if (active !== attempt) return;
   active = undefined; start.disabled = false; consent.disabled = false;
@@ -11,7 +16,7 @@ function finish(attempt, message) {
   attempt.controller.abort(); attempt.connection?.stop();
 }
 start.addEventListener('click', async () => {
-  if (active || start.disabled) return;
+  if (!browserCalling || active || start.disabled) return;
   if (!consent.checked) { error.textContent = 'Review the notice and check the box to start.'; return; }
   start.disabled = true; consent.disabled = true; error.textContent = '';
   const attempt = { controller: new AbortController() }; active = attempt;

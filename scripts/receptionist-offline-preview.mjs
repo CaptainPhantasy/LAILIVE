@@ -31,7 +31,7 @@ http.createServer(async (incoming, outgoing) => {
       const extension = path.extname(file);
       if (extension === '.html' && file !== path.join(base, 'receptionist/index.html')) throw new Error('Only the test page is served.');
       let data = await readFile(file);
-      if (extension === '.html') data = Buffer.from(data.toString().replace('<h1>', '<p class="ch-error">OFFLINE TEST — synthetic replies and receipt. No provider calls or saved inquiry.</p><h1>'));
+      if (extension === '.html') data = Buffer.from(data.toString().replace('<h1>', '<p class="ch-error">OFFLINE TEST — synthetic replies and receipt. No provider calls or saved inquiry.</p><h1>').replace('</head>', '<style>.ch-panel{display:none}</style></head>').replace('<noscript>', '<p class="ch-error">Browser calling is unavailable in this offline fixture. Call Darla at <a href="tel:+18124123454">812-412-3454</a>.</p><noscript>'));
       const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.woff2': 'font/woff2' };
       response = new Response(data, { headers: { 'Content-Type': types[extension] || 'application/octet-stream' } });
     }

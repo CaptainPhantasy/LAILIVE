@@ -58,6 +58,26 @@ test('a new manual calendar conflict is checked immediately before event inserti
   assert.equal((await pg.query('SELECT status FROM legacy_live_bookings')).rows[0].status, 'conflict');
 }));
 
+test('a failed pre-insert calendar check releases the pending hold so the slot stays retryable', async () => withBooking(async ({ booking, provider, pg }) => {
+  provider.busy = async () => { throw new Error('Calendar unreachable'); };
+  const result = await booking.reserve(details);
+  assert.equal(result.booked, false); assert.equal(result.uncertain, false);
+  assert.equal((await pg.query('SELECT count(*)::int AS n FROM legacy_live_bookings')).rows[0].n, 0);
+  provider.busy = async () => [];
+  assert.equal((await booking.reserve(details)).booked, true);
+  assert.equal(provider.calls.length, 1);
+}));
+
+test('a conflict verdict is retried with the same details once the slot is free', async () => withBooking(async ({ booking, provider, pg }) => {
+  provider.busy = async () => [{ start: details.slotStart, end: '2026-10-19T17:00:00Z' }];
+  assert.equal((await booking.reserve(details)).booked, false);
+  assert.equal((await pg.query('SELECT status FROM legacy_live_bookings')).rows[0].status, 'conflict');
+  provider.busy = async () => [];
+  assert.equal((await booking.reserve(details)).booked, true);
+  assert.equal(provider.calls.length, 1);
+  assert.equal((await pg.query('SELECT status FROM legacy_live_bookings')).rows[0].status, 'confirmed');
+}));
+
 test('manual Calendar moves and cancellations free the original confirmed slot', async () => withBooking(async ({ booking, provider }) => {
   const reservation = await booking.reserve(details);
   const event = provider.events.get(reservation.eventId);
