@@ -17,3 +17,19 @@ test('real database saves inbound lead once and sends only owner emails while ou
   const result = await pg.query('SELECT * FROM legacy_frontdesk_sms'); assert.equal(result.rows.length, 1); assert.equal(result.rows[0].body, 'Please help with my website');
  } finally { await pg.close(); }
 });
+
+test('a retry cannot acknowledge an inbound text while owner notification is still pending', async () => {
+ const pg = new PGlite(); let release, started;
+ const blocked = new Promise(resolve => { release = resolve; }), sending = new Promise(resolve => { started = resolve; });
+ try {
+  const handler = createFrontdeskSmsHandler({ getDb: () => drizzle(pg), env, mail: async () => { started(); await blocked; } });
+  const first = handler(request());
+  await sending;
+  const retry = await handler(request());
+  assert.equal(retry.status, 503);
+  assert.match((await retry.json()).error, /pending/);
+  release();
+  assert.equal((await first).status, 200);
+  assert.equal((await handler(request())).status, 200);
+ } finally { release?.(); await pg.close(); }
+});

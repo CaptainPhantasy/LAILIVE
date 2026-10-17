@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { BOARD_SYSTEM_PROMPT } from '../lib/board-prompt.js'
 import { createBoardHandler } from '../lib/board-handler.js'
 
 // Network-free contract tests. Test providers are injected only here, never in the API.
@@ -14,9 +14,9 @@ const request = (body = { question }, headers = {}, method = 'POST') => new Requ
 })
 const provider = () => ({ textStream: (async function* () { yield 'First '; yield 'second.' })() })
 
-test('rejects non-POST and cross-origin requests before generation', async () => {
+test('rejects unsupported methods and cross-origin requests before generation', async () => {
   const handler = createBoardHandler({ env, streamText: () => { throw new Error('must not generate') } })
-  assert.equal((await handler(request(undefined, {}, 'GET'))).status, 405)
+  assert.equal((await handler(request(undefined, {}, 'PUT'))).status, 405)
   assert.equal((await handler(request(undefined, { origin: 'https://unrelated.example' }))).status, 403)
 })
 
@@ -36,19 +36,18 @@ test('missing auth returns a configuration error without calling provider', asyn
   assert.match((await response.json()).error, /authentication/)
 })
 
-test('preserves real source prompt, model/fallback, output bound and plain-text streaming', async () => {
+test('uses a concise five-perspective prompt and preserves after-hours streaming and fallback', async () => {
   let options
-  const handler = createBoardHandler({ env, streamText: input => { options = input; return provider() } })
+  const handler = createBoardHandler({ env, now: () => Date.parse('2026-10-17T19:00:00Z'), streamText: input => { options = input; return provider() } })
   const response = await handler(request(undefined, { origin: 'https://legacyai.space' }))
   assert.equal(response.status, 200)
   assert.equal(response.headers.get('content-type'), 'text/plain; charset=utf-8')
   assert.equal(await response.text(), 'First second.')
-  const original = readFileSync(new URL('../provenance/deployed-route.ts.txt', import.meta.url), 'utf8')
-  const expectedPrompt = original.split('const BOARD_SYSTEM_PROMPT = `')[1].split('`\n')[0]
-  assert.equal(options.instructions, expectedPrompt)
+  assert.equal(options.instructions, BOARD_SYSTEM_PROMPT)
+  for (const name of ['Elena Vasquez', 'Marcus Cole', 'Priya Sharma', 'Jordan Osei', 'Catherine Bishop']) assert.ok(options.instructions.includes(name))
   assert.equal(options.model, 'anthropic/claude-sonnet-4.6')
   assert.deepEqual(options.providerOptions.gateway.models, ['openai/gpt-5.6-terra'])
-  assert.equal(options.maxOutputTokens, 8000)
+  assert.equal(options.maxOutputTokens, 3000)
   assert.equal(options.timeout, 90000)
   assert.equal(options.maxRetries, 0)
   assert.equal(options.prompt, question)

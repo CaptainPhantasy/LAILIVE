@@ -1,5 +1,34 @@
   const BOARD_ENDPOINT = '/api/board';
   const BOARD_STORAGE_KEY = 'legacyai_board_spun_v1';
+  let boardRepeatSessions = false;
+  let completedBoardReport = null;
+
+  function setCompletedBoardReport(question, text) {
+    completedBoardReport = text?.trim() ? `YOUR BOARD REPORT\n\nDecision: ${question}\n\n${text}\n` : null;
+    document.getElementById('boardDownload').hidden = !completedBoardReport;
+  }
+
+  function downloadBoardReport() {
+    if (!completedBoardReport) return;
+    const url = URL.createObjectURL(new Blob([completedBoardReport], { type: 'text/plain;charset=utf-8' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'LegacyAI-Board-Report.txt';
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  function applyBoardPolicy(repeatSessions) {
+    boardRepeatSessions = repeatSessions === true;
+    const note = document.getElementById('boardSessionNote');
+    if (note && boardRepeatSessions) note.textContent = 'Bring another decision during business hours: Monday–Friday, 8am–5pm Eastern. Up to four sessions per hour, subject to availability. Your contact details stay attached to the conversation with Douglas.';
+    else if (note) note.textContent = 'Bring one real decision. Share your reply details with Douglas, then get five perspectives and a practical next step.';
+    const complete = document.getElementById('boardCompleteMessage');
+    if (complete && boardRepeatSessions) complete.textContent = 'Your report is ready. Bring the next decision, or talk with Douglas about putting the recommendation to work.';
+    else if (complete) complete.textContent = 'Your report is ready. Talk with Douglas about putting the recommendation to work for your business.';
+  }
 
   // Render report structure only after streaming, with every source character escaped.
   function formatBoardReport(text) {
@@ -81,6 +110,7 @@
     output.classList.add('board-output-caret');
     output.innerHTML = '';
     output.classList.remove('report-formatted');
+    setCompletedBoardReport('', '');
 
     let fullText = '';
 
@@ -88,7 +118,7 @@
       const response = await fetch(BOARD_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-Legacy-Inquiry': inquiryReceipt.id },
-        body: JSON.stringify({ question: question })
+        body: JSON.stringify({ question: question, repeatSession: boardAlreadySpent() })
       });
 
       if (!response.ok) {
@@ -97,6 +127,7 @@
       }
 
       if (!response.body) throw new Error('No response stream from the board.');
+      applyBoardPolicy(response.headers.get('X-Board-Repeat-Sessions') === 'true');
 
       const reader  = response.body.getReader();
       const decoder = new TextDecoder();
@@ -118,6 +149,7 @@
       output.innerHTML = formatBoardReport(fullText);
       output.classList.add('report-formatted');
       output.scrollTop = 0;
+      setCompletedBoardReport(question, fullText);
 
       // Done
       output.classList.remove('board-output-caret');
@@ -125,10 +157,17 @@
       status.textContent = '◉ report delivered';
       status.style.color = 'var(--moss-bright)';
 
-      // Mark spent, hide input, show CTA
+      // The server decides whether repeats are active; no lifetime lock during
+      // the verified low-cost window. Contact capture still runs for every decision.
       markBoardSpent(question);
-      document.getElementById('boardInputBlock').style.display = 'none';
       spent.classList.add('active');
+      document.getElementById('boardInputBlock').style.display = boardRepeatSessions ? '' : 'none';
+      if (boardRepeatSessions) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Convene the Board';
+        input.disabled = false;
+        input.value = '';
+      }
 
     } catch (err) {
       output.classList.remove('board-output-caret');
@@ -148,12 +187,13 @@
     }
   }
 
-  function initBoardSession() {
+  async function initBoardSession() {
     const input       = document.getElementById('boardQuestionInput');
     const submitBtn   = document.getElementById('boardSubmit');
     const inputBlock  = document.getElementById('boardInputBlock');
     const spent       = document.getElementById('boardSpent');
     const questionEcho= document.getElementById('boardQuestion');
+    document.getElementById('boardDownload').addEventListener('click', downloadBoardReport);
 
     // Prefill from ?q= if present (Ryan's hand-off URL)
     try {
@@ -162,8 +202,16 @@
       if (q) input.value = q;
     } catch (_) {}
 
-    // If already spent, restore the spent state
-    if (boardAlreadySpent()) {
+    // Ask the server before restoring the old one-use flag, including for
+    // returning visitors. This request generates nothing and costs no tokens.
+    submitBtn.disabled = true;
+    try {
+      const response = await fetch(BOARD_ENDPOINT, { cache: 'no-store', signal: AbortSignal.timeout(5000) });
+      if (response.ok) applyBoardPolicy((await response.json()).repeatSessions);
+    } catch (_) { /* Keep the current one-session policy if availability cannot be checked. */ }
+    submitBtn.disabled = false;
+
+    if (boardAlreadySpent() && !boardRepeatSessions) {
       inputBlock.style.display = 'none';
       try {
         const prev = JSON.parse(localStorage.getItem(BOARD_STORAGE_KEY) || '{}');
@@ -174,6 +222,7 @@
       } catch (_) {}
       spent.classList.add('active');
       document.getElementById('boardStatus').textContent = '◉ session complete';
+      document.getElementById('boardCompleteMessage').textContent = 'Your previous session is complete. Talk with Douglas about putting the recommendation to work for your business.';
       return;
     }
 

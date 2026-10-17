@@ -35,7 +35,14 @@
       "maxDuration": 30
     },
     "api/frontdesk/message.js": {
-      "maxDuration": 30
+      "maxDuration": 60
+    },
+    "api/voice-report.js": {
+      "maxDuration": 60
+    },
+    "api/voice-report-pdf.js": {
+      "maxDuration": 30,
+      "includeFiles": "lib/voice-report-fonts/**"
     }
   },
   "headers": [

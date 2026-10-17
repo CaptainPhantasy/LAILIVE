@@ -56,6 +56,14 @@ STATUS · CERTIFIED IN PRODUCTION
 
 ISSUED · legacyai.space
 
+Try it with a job of your own
+
+## Speak the job. Keep the report.
+
+Tell us what happened on a job. Turn your spoken or typed notes into a polished report, review and edit the details, then download a PDF you can keep.
+
+Make my report →
+
 The Promise
 
 ##
@@ -787,22 +795,24 @@ Bring the decision you were going to sleep on
 
 Convene the Board
 
-One session per visitor after your inquiry is received. Add your reply details, review the question Douglas will receive, and see the Board report on this page. No email is sent automatically.
+Bring one real decision. Share your reply details with Douglas, then get five perspectives and a practical next step.
 
 ≡ Board report
 
 ## Five perspectives.
 One decision.
-Majority recommendation
+Recommendation
 Dissent
 Risks
 Next steps
 
 Convening the board…
 
+Download your report
+
 ◉ Session complete
 
-That was one session on one decision. The owners who keep a standing seat have the board on call for every decision that comes up — hiring, pricing, acquisitions, pivots, the lot. Ask Douglas about a seat.
+Your report is ready. Talk with Douglas about putting the recommendation to work for your business.
 
 See the deal
 →
@@ -1082,6 +1092,7 @@ Auto body & collision; plumbers, HVAC and contractors; chiropractic & wellness; 
 - The Board: https://legacyai.space/board/
 - Contact-list health check: https://legacyai.space/contact-health/
 - Darla, the Legacy AI receptionist: https://legacyai.space/receptionist/
+- Voice-to-report: https://legacyai.space/voice-report/ — speak or type job notes, review and edit a polished report, and download the PDF.
 - Live booking calendar preview: https://legacyai.space/booking/
 - Missed-call text-back builder: https://legacyai.space/missed-call/
 

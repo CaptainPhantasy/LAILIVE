@@ -27,6 +27,7 @@
 <meta name="twitter:image" content="https://legacyai.space/og-solutions.jpg" />
 <meta name="twitter:image:alt" content="Legacy AI social card: the LEGACY AI wordmark on aged paper above the line “We don’t sell technology. We sell results.”" />
 <meta name="theme-color" content="#182721" />
+<style>#boardDownload[hidden]{display:none}#boardDownload{grid-column:1/-1;justify-self:start}</style>
 <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebPage","@id":"https://legacyai.space/board/#page","url":"https://legacyai.space/board/","name":"The Board — Five AI Perspectives on One Decision","isPartOf":{"@id":"https://legacyai.space/#website"},"description":"Five AI advisor perspectives examine one business decision: the recommendation, the dissent, the risks and the next steps.","breadcrumb":{"@id":"https://legacyai.space/board/#breadcrumb"}},{"@type":"BreadcrumbList","@id":"https://legacyai.space/board/#breadcrumb","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://legacyai.space/"},{"@type":"ListItem","position":2,"name":"The Board","item":"https://legacyai.space/board/"}]}]}</script>
 
 
@@ -57,12 +58,12 @@
                  maxlength="500" />
           <button class="board-submit" id="boardSubmit" type="button">Convene the Board</button>
         </div>
-        <div class="board-input-note">
-          One session per visitor after your inquiry is received. Add your reply details, review the question Douglas will receive, and see the Board report on this page. No email is sent automatically.
+        <div class="board-input-note" id="boardSessionNote">
+          Bring one real decision. Share your reply details with Douglas, then get five perspectives and a practical next step.
         </div>
       </div>
 
-<aside class="report-guide" aria-label="What your Board report includes"><span class="report-icon" aria-hidden="true">≡</span><div class="eyebrow">Board report</div><h2>Five perspectives.<br><em>One decision.</em></h2><ul><li>Majority recommendation</li><li>Dissent</li><li>Risks</li><li>Next steps</li></ul></aside>
+<aside class="report-guide" aria-label="What your Board report includes"><span class="report-icon" aria-hidden="true">≡</span><div class="eyebrow">Board report</div><h2>Five perspectives.<br><em>One decision.</em></h2><ul><li>Recommendation</li><li>Dissent</li><li>Risks</li><li>Next steps</li></ul></aside>
       <div class="board-stream-status" id="boardStreamStatus">
         <span class="board-stream-dot"></span>
         <span id="boardStreamLabel">Convening the board…</span>
@@ -71,13 +72,14 @@
       <div class="board-session-question" id="boardQuestion"></div>
 
       <div class="board-output" id="boardOutput"></div>
+      <button class="board-submit" id="boardDownload" type="button" hidden>Download your report</button>
 
       <div class="board-error" id="boardError"></div>
 
       <div class="board-spent" id="boardSpent">
         <div class="board-spent-label">◉ Session complete</div>
-        <div class="board-spent-body">
-          That was one session on one decision. The owners who keep a standing seat have the board on call for every decision that comes up — hiring, pricing, acquisitions, pivots, the lot. <em>Ask Douglas about a seat.</em>
+        <div class="board-spent-body" id="boardCompleteMessage">
+          Your report is ready. Talk with Douglas about putting the recommendation to work for your business.
         </div>
         <a class="board-spent-cta" href="/deal/">
           <span>See the deal</span>

@@ -11,6 +11,7 @@ const pages = [
   { url: '/intake/', priority: '0.9' },
   { url: '/contact-health/', priority: '0.8' },
   { url: '/receptionist/', priority: '0.8' },
+  { url: '/voice-report/', priority: '0.8' },
   { url: '/booking/', priority: '0.8' },
   { url: '/missed-call/', priority: '0.8' },
   { url: '/deal/', priority: '0.8' },
@@ -40,6 +41,7 @@ Legacy AI is led by founder Douglas Talley and based in Brown County, Indiana. E
 - [The Board](${site}/board/): Five AI advisor perspectives examine one business decision — recommendation, dissent, risks, next steps.
 - [Contact-list health check](${site}/contact-health/): A browser tool that reviews a customer CSV for missing details, duplicate rows and conflicting contact information.
 - [Darla, the Legacy AI receptionist](${site}/receptionist/): The receptionist who never calls in works here, too. Meet Darla: call Legacy AI at 812-412-3454 and hear her in action.
+- [Voice-to-report](${site}/voice-report/): Speak or type job notes, review and edit a polished report, and download the PDF.
 - [Live booking calendar preview](${site}/booking/): Turns business hours, buffers and an existing .ics calendar into the open times customers would be offered, on the visitor's device.
 - [Missed-call text-back builder](${site}/missed-call/): Drafts missed-call text-backs in English and Spanish with SMS segment counts and carrier-friendly checks.
 
@@ -86,6 +88,7 @@ ${catalog.services.map(s => `- ${s.name} (${s.tag}): ${s.body}`).join('\n')}
 - The Board: ${site}/board/
 - Contact-list health check: ${site}/contact-health/
 - Darla, the Legacy AI receptionist: ${site}/receptionist/
+- Voice-to-report: ${site}/voice-report/ — speak or type job notes, review and edit a polished report, and download the PDF.
 - Live booking calendar preview: ${site}/booking/
 - Missed-call text-back builder: ${site}/missed-call/
 
