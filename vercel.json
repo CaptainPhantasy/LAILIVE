@@ -35,7 +35,7 @@
       "maxDuration": 30
     },
     "api/frontdesk/message.js": {
-      "maxDuration": 30
+      "maxDuration": 60
     },
     "api/frontdesk/sms.js": {
       "maxDuration": 30
