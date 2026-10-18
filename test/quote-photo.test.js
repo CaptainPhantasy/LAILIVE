@@ -20,6 +20,9 @@ const linkFor = id => `https://legacyai.space/api/frontdesk/quote-photo?token=${
 const save = (id, fields) => new Request(linkFor(id), {
   method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ token: tokenFor(id), action: 'save', ...fields }),
 });
+const sendQuote = (id, email) => new Request(linkFor(id), {
+  method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ token: tokenFor(id), action: 'send', customer_email: email }),
+});
 const failing = async () => { throw new Error('provider down'); };
 
 test('a photo upload is validated and survives a failed description', async () => {
@@ -73,5 +76,32 @@ test('the owner prices the quote and the price is stored in cents', async () => 
     assert.match(row.quote, /Replace the trap/);
     assert.equal(sent.filter(message => /Quote priced/.test(message.subject)).length, OWNER_ADDRESSES.length);
     assert.match(await (await handler(new Request(linkFor(created.id)))).text(), /\$450\.50/);
+  } finally { await pg.close(); }
+});
+
+test('a priced quote is sent to the customer once, then locks', async () => {
+  const pg = new PGlite(); const db = drizzle(pg); const sent = [];
+  const handler = createQuotePhotoHandler({ getDb: () => db, mail: async message => { sent.push(message); return true; }, env, describe: failing });
+  try {
+    const created = await (await handler(upload({ mime: 'image/png', data: photo, filename: 'send.png' }))).json();
+    assert.equal((await handler(sendQuote(created.id, 'customer@example.com'))).status, 409);
+    await handler(save(created.id, { quote: 'Replace the trap and dry the shelf.', price: '300.00' }));
+    assert.equal((await handler(sendQuote(created.id, 'not-an-email'))).status, 400);
+    const page = await handler(sendQuote(created.id, 'customer@example.com'));
+    const html = await page.text();
+    assert.equal(page.status, 200);
+    assert.match(html, /Quote sent to customer@example\.com/);
+    assert.equal(sent.filter(message => message.to === 'customer@example.com').length, 1);
+    assert.match(sent.find(message => message.to === 'customer@example.com').body, /Total: \$300\.00/);
+    const again = await handler(sendQuote(created.id, 'customer@example.com'));
+    assert.match(await again.text(), /already sent/);
+    assert.equal(sent.filter(message => message.to === 'customer@example.com').length, 1);
+    const row = (await pg.query('SELECT status,customer_email,sent_at IS NOT NULL AS sent FROM legacy_quote_photos')).rows[0];
+    assert.equal(row.status, 'sent');
+    assert.equal(row.customer_email, 'customer@example.com');
+    assert.equal(row.sent, true);
+    assert.match(await (await handler(save(created.id, { quote: 'A changed quote that should not stick.', price: '1.00' }))).text(), /cannot be edited/);
+    assert.equal((await pg.query('SELECT price_cents FROM legacy_quote_photos')).rows[0].price_cents, 30000);
+    assert.equal(sent.filter(message => /Quote sent: send\.png/.test(message.subject)).length, OWNER_ADDRESSES.length);
   } finally { await pg.close(); }
 });
