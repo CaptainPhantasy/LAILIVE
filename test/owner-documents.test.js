@@ -16,11 +16,12 @@ test('PIN owner draft PDF edit and explicit approval use durable records with no
   assert.equal((await handlers.owner(req({ call_id: 'call-owner', arguments: { content: 'forged' } }))).status, 401);
   const denied = await (await handlers.owner(req({ call: { call_id: 'call-owner', from: '+19999999999' }, vars: { prompt_value: '123456' } }))).json();
   assert.ok(!JSON.stringify(denied).includes('save_owner_draft'));
+  assert.match(denied.sections.main[0].play.url, /^say:/);
   const verified = await (await handlers.owner(req({ call: { call_id: 'call-owner', from: '+18123405761' }, vars: { prompt_value: '123456' } }))).json();
   assert.ok(verified.sections.main.find(step=>step.record_call));
   const tool = verified.sections.main.find(step=>step.ai).ai.SWAIG.functions[0];
   assert.ok(!JSON.stringify(verified).includes('123456'));
-  const draft = { call_id: 'call-owner', arguments: { kind: 'field_report', title: 'Test report', content: 'Inspected the entrance. No damage observed.', recipient: 'customer@example.test' } };
+  const draft = { call_id: 'call-owner', argument: { kind: 'field_report', title: 'Test report', content: 'Inspected the entrance. No damage observed.', recipient: 'customer@example.test' } };
   const saved = await (await handlers.owner(req(draft, tool.web_hook_url, false))).json();
   assert.match(saved.response, /saved/); assert.equal(sent.length, 2);
   assert.ok(sent.every(mail => mail.to !== 'customer@example.test'));

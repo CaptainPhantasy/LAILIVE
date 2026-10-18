@@ -5,6 +5,22 @@ import { drizzle } from 'drizzle-orm/pglite';
 import { createFrontdeskSmsHandler } from '../lib/frontdesk-sms.js';
 const env = { RECEPTIONIST_WEBHOOK_SECRET: 'test-secret', FRONTDESK_SMS_FROM: '+18124123454' };
 const request = (values = {}, secret = true) => new Request('https://legacyai.space/api/frontdesk/sms', { method: 'POST', headers: { ...(secret ? { 'x-frontdesk-secret': 'test-secret' } : {}) }, body: new URLSearchParams({ MessageSid: 'SM123', From: '+18125550123', To: env.FRONTDESK_SMS_FROM, Body: 'Please help with my website', ...values }) });
+test('partial owner email delivery retries only the missing recipient across handler restarts', async () => {
+ const pg = new PGlite(), db = drizzle(pg), attempts = [];
+ const mail = async value => {
+  attempts.push(value.to);
+  if (attempts.length === 2) throw new Error('second owner inbox unavailable');
+ };
+ const create = () => createFrontdeskSmsHandler({ getDb: () => db, env, mail });
+ try {
+  assert.equal((await create()(request())).status, 503);
+  assert.equal((await create()(request())).status, 200);
+  assert.equal(attempts.length, 3);
+  assert.equal(attempts[2], attempts[1]);
+  assert.equal((await create()(request())).status, 200);
+  assert.equal(attempts.length, 3);
+ } finally { await pg.close(); }
+});
 test('real database saves inbound lead once and sends only owner emails while outbound registration disabled', async () => {
  const pg = new PGlite(); const sent = [];
  try {

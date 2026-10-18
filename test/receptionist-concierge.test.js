@@ -33,6 +33,7 @@ test('actual prefab preserves all knowledge and Alloy; no fictitious hours or su
   assert.equal(createHash('sha256').update(source).digest('hex'), KNOWLEDGE_SHA256);
   const swml = JSON.parse(agent.renderSwml(randomUUID()));
   const ai = aiOf(swml);
+  assert.equal(ai.params.static_greeting, "Thank you for calling Legacy AI. I'm Darla, the AI receptionist. How can I help?");
   assert.equal(swml.sections.main.find(verb => verb.answer).answer.max_duration, undefined, 'leave the provider maximum in place');
   assert.equal(ai.languages.length, 2);
   assert.ok(ai.languages.every(language => language.voice === 'openai.alloy'));
