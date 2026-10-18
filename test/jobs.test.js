@@ -91,3 +91,18 @@ test('invalid links and incomplete job payloads are refused', async () => {
     assert.equal(sent.length, 0);
   } finally { await pg.close(); }
 });
+
+test('a job can be assigned with a recorded receipt and an owner email', async () => {
+  const pg = new PGlite(); const db = drizzle(pg); const sent = [];
+  const handler = createJobHandler({ getDb: () => db, mail: async message => { sent.push(message); return true; }, env });
+  try {
+    await handler(create({ job_id: 'JOB-ASSIGN', customer_name: 'Assign Customer', service: 'Repair' }));
+    assert.equal((await handler(create({ action: 'assign', job_id: 'NO-JOB', technician: 'Alex' }))).status, 404);
+    assert.equal((await handler(create({ action: 'assign', job_id: 'JOB-ASSIGN', technician: '  ' }))).status, 400);
+    const assigned = await (await handler(create({ action: 'assign', job_id: 'JOB-ASSIGN', technician: 'Alex' }))).json();
+    assert.equal(assigned.technician, 'Alex');
+    assert.equal((await pg.query("SELECT assigned_to FROM legacy_jobs WHERE job_id='JOB-ASSIGN'")).rows[0].assigned_to, 'Alex');
+    assert.equal((await pg.query("SELECT count(*)::int AS n FROM legacy_job_events WHERE status='assigned' AND detail='Alex'")).rows[0].n, 1);
+    assert.equal(sent.filter(message => /Job assigned: Assign Customer/.test(message.subject)).length, OWNER_ADDRESSES.length);
+  } finally { await pg.close(); }
+});
