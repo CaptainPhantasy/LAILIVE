@@ -1,7 +1,7 @@
 import { requestLead } from '/lead-gate.js';
 
 const $ = id => document.getElementById(id);
-const labels = { work_requested: 'Reason for the visit', observations: 'Findings & observations', work_completed: 'Work completed', recommendations: 'Recommendations', next_steps: 'Next steps' };
+const labels = { summary: 'Summary', work_requested: 'Reason for the visit', observations: 'Findings & observations', work_completed: 'Work completed', recommendations: 'Recommendations', next_steps: 'Next steps' };
 const metadataLabels = { customer: 'Customer', location: 'Location', jobDate: 'Visit date', preparedBy: 'Prepared by' };
 let currentReport = null, generatedNote = '', working = false, recognition = null, recording = false, starting = false, ticker, stopTimer, speechStart = 0, speechFailed = false;
 const show = (id, message) => { $(id).textContent = message; $(id).hidden = !message; };

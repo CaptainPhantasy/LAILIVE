@@ -13,7 +13,7 @@ export async function generate(input) {
   if (!process.env.VERCEL && !process.env.AI_GATEWAY_API_KEY && !process.env.VERCEL_OIDC_TOKEN) throw new HttpError(503, 'The receptionist is not connected yet. Please try again later.');
   const messages = input.messages.map(m => ({ role: m.role === 'caller' ? 'user' : 'assistant', content: m.content }));
   const result = await generateText({
-    model: gateway(process.env.RECEPTIONIST_MODEL || model), maxOutputTokens: 700, maxRetries: 0, timeout: 30000, providerOptions: gatewayProviderOptions(),
+    model: gateway(process.env.RECEPTIONIST_MODEL || model), maxOutputTokens: 700, maxRetries: 0, timeout: 30000, ...(String(process.env.RECEPTIONIST_MODEL || model).startsWith('deepseek/') ? { reasoning: 'none' } : {}), providerOptions: gatewayProviderOptions(),
     instructions: receptionistInstructions(input),
     ...(messages.length ? { messages } : { prompt: '(The phone is ringing. Answer it.)' }),
     output: Output.object({ schema: receptionistOutput }),

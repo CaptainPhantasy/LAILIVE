@@ -36,7 +36,7 @@ test('missing auth returns a configuration error without calling provider', asyn
   assert.match((await response.json()).error, /authentication/)
 })
 
-test('uses a concise five-perspective prompt and preserves after-hours streaming and fallback', async () => {
+test('uses a concise five-perspective prompt and DeepSeek after hours without a premium fallback', async () => {
   let options
   const handler = createBoardHandler({ env, now: () => Date.parse('2026-10-17T19:00:00Z'), streamText: input => { options = input; return provider() } })
   const response = await handler(request(undefined, { origin: 'https://legacyai.space' }))
@@ -45,8 +45,9 @@ test('uses a concise five-perspective prompt and preserves after-hours streaming
   assert.equal(await response.text(), 'First second.')
   assert.equal(options.instructions, BOARD_SYSTEM_PROMPT)
   for (const name of ['Elena Vasquez', 'Marcus Cole', 'Priya Sharma', 'Jordan Osei', 'Catherine Bishop']) assert.ok(options.instructions.includes(name))
-  assert.equal(options.model, 'anthropic/claude-sonnet-4.6')
-  assert.deepEqual(options.providerOptions.gateway.models, ['openai/gpt-5.6-terra'])
+  assert.equal(options.model, 'deepseek/deepseek-v4.1-flash-1017')
+  assert.deepEqual(options.providerOptions.gateway, { caching: 'auto', only: ['deepseek'] })
+  assert.equal(options.reasoning, 'none')
   assert.equal(options.maxOutputTokens, 3000)
   assert.equal(options.timeout, 90000)
   assert.equal(options.maxRetries, 0)

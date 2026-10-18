@@ -100,7 +100,7 @@ test('competitor research synthesis requests automatic caching', async t => {
   assert.deepEqual(gatewayOptionsOf(requests[0]), { caching: 'auto' });
 });
 
-test('the Board sends its fallback models and automatic caching together', async () => {
+test('the Board sends DeepSeek and automatic caching together', async () => {
   let options;
   const handler = createBoardHandler({
     env: { AI_GATEWAY_API_KEY: 'fixture-gateway-key' },
@@ -112,6 +112,6 @@ test('the Board sends its fallback models and automatic caching together', async
     body: JSON.stringify({ question: 'Should we add a second service truck?' }),
   }));
   assert.equal(response.status, 200);
-  assert.deepEqual(options.providerOptions, { gateway: { caching: 'auto', models: ['openai/gpt-5.6-terra'] } });
-  assert.equal(options.model, 'anthropic/claude-sonnet-4.6');
+  assert.deepEqual(options.providerOptions, { gateway: { caching: 'auto', only: ['deepseek'] } });
+  assert.equal(options.model, 'deepseek/deepseek-v4.1-flash-1017');
 });

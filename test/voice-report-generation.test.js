@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createVoiceReportGeneration, voiceReportUsageRecord, reportReview } from '../lib/voice-report-generation.js';
+import { createVoiceReportGeneration, voiceReportUsageRecord, reportReview, reportRepairInstructions } from '../lib/voice-report-generation.js';
 import { groundedReport } from '../lib/voice-report.js';
 
 const note = 'Um, I ran the cable 30 feet—no, sorry, 35 feet—and got grease. Didn’t see any roots. It drains now. Camera check recommended, haven’t done that yet.';
@@ -53,4 +53,21 @@ test('unknown cost remains unknown rather than being reported as free', () => {
   assert.equal(record.costBasis, 'unavailable');
   assert.equal(record.generationId, null);
   assert.doesNotMatch(JSON.stringify(record), /do not log/);
+});
+
+test('a grounding rejection gets one exact-quote repair before the fidelity review', async () => {
+  const messy = 'so the job started with the. build-out plan of the. implementation where we were going to try to get the. 54. items working. We picked six.';
+  const bad = { customer: '', location: '', jobDate: '', preparedBy: '', sections: [{ kind: 'summary', content: 'The work began with an implementation plan for 54 items; six were selected.', excerpts: ['an implementation plan for 54 items'] }] };
+  const good = { customer: '', location: '', jobDate: '', preparedBy: '', sections: [{ kind: 'summary', content: 'The work began with a build-out plan for 54 items; six were selected.', excerpts: ['the build-out plan of the implementation where we were going to try to get the 54 items working.'] }] };
+  const calls = [], logs = [];
+  const generate = createVoiceReportGeneration({ env: {}, gateway: name => name, log: value => logs.push(value), generate: async options => {
+    calls.push(options);
+    return calls.length === 1 ? providerResult(bad, 'draft') : calls.length === 2 ? providerResult(good, 'repair') : providerResult(passed, 'review');
+  } });
+  const output = await generate(messy);
+  assert.equal(calls.length, 3);
+  assert.equal(calls[1].instructions, reportRepairInstructions);
+  assert.equal(output.sections[0].excerpts[0], good.sections[0].excerpts[0]);
+  assert.equal(logs.at(-1).event, 'voice_report_complete');
+  assert.doesNotMatch(JSON.stringify(logs), /build-out|implementation|54 items/i);
 });

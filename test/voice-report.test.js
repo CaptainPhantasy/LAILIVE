@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { groundedReport, reportInstructions, createVoiceReportHandler } from '../lib/voice-report.js';
+import { groundedReport, reportInstructions, reportSectionLabels, createVoiceReportHandler } from '../lib/voice-report.js';
 
 const note = 'Visited 214 Oak Street for Maria López. Found a loose handle. Tightened the handle and tested it three times. Customer will call if the leak returns.';
 const extraction = { customer: 'Maria López', location: '214 Oak Street', jobDate: '', preparedBy: '', sections: [
@@ -32,6 +32,14 @@ test('exact substrings cannot discard negation or conditions around the work', (
   const conditional = 'If the customer approves, we will replace the pump.';
   assert.throws(() => groundedReport({ customer: '', location: '', jobDate: '', preparedBy: '', sections: [{ kind: 'work_completed', content: 'Will replace the pump.', excerpts: ['we will replace the pump.'] }] }, conditional), /shortened a sentence/);
   assert.equal(groundedReport({ customer: '', location: '', jobDate: '', preparedBy: '', sections: [{ kind: 'observations', content: negative, excerpts: [negative] }] }, negative).sections[0].content, negative);
+});
+
+test('messy dictation punctuation and a project narrative use summary sections', () => {
+  const messy = 'so the job started with the. build-out plan of the. implementation where we were going to try to get the. 54. items working. We picked six.';
+  const draft = { customer: '', location: '', jobDate: '', preparedBy: '', sections: [{ kind: 'summary', content: 'The work began with a build-out plan to make 54 items work; six were selected.', excerpts: ['the build-out plan of the implementation where we were going to try to get the 54 items working.'] }] };
+  const report = groundedReport(draft, messy);
+  assert.equal(report.sections[0].kind, 'summary');
+  assert.equal(reportSectionLabels.summary, 'Summary');
 });
 
 test('professional prose cannot introduce new numeric quantities', () => {

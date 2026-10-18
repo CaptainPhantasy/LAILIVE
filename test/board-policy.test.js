@@ -27,23 +27,22 @@ test('repeat sessions require deliberate activation and the low-cost business wi
   assert.equal(boardPolicy(env, Date.parse('2026-10-19T21:00:00Z')).repeatSessions, false)
 })
 
-test('DeepSeek acceptance override requires the exact preview branch and leaves the real clock and repeats unchanged', () => {
+test('the Board always uses the DeepSeek 1017 model with no premium fallback', () => {
   const saturday = Date.parse('2026-10-17T19:00:00Z')
   const preview = { ...env, VERCEL_ENV: 'preview', VERCEL_GIT_COMMIT_REF: 'feat/live-service-demos', BOARD_PREVIEW_DEEPSEEK: 'true' }
   for (const overrides of [null, { VERCEL_ENV: 'production' }, { VERCEL_ENV: 'development' }, { VERCEL_GIT_COMMIT_REF: 'preview' }, { VERCEL_GIT_COMMIT_REF: undefined }, { BOARD_PREVIEW_DEEPSEEK: undefined }, { BOARD_PREVIEW_DEEPSEEK: 'false' }]) {
     const policy = boardPolicy({ ...preview, ...overrides }, saturday)
-    const accepted = overrides === null
     assert.equal(policy.businessHours, false)
     assert.equal(policy.repeatSessions, false)
-    assert.equal(policy.model, accepted ? 'deepseek/deepseek-v4.1-flash' : 'anthropic/claude-sonnet-4.6')
+    assert.equal(policy.model, 'deepseek/deepseek-v4.1-flash-1017')
     const options = boardGenerationOptions(policy)
-    assert.deepEqual(options.providerOptions.gateway, accepted ? { caching: 'auto', only: ['deepseek'] } : { caching: 'auto', models: ['openai/gpt-5.6-terra'] })
-    assert.equal(options.reasoning, accepted ? 'none' : undefined)
+    assert.deepEqual(options.providerOptions.gateway, { caching: 'auto', only: ['deepseek'] })
+    assert.equal(options.reasoning, 'none')
   }
   const record = boardUsageRecord({}, boardPolicy(preview, saturday), saturday)
   assert.equal(record.at, '2026-10-17T19:00:00.000Z')
   assert.equal(record.businessHours, false)
-  assert.equal(record.requestedModel, 'deepseek/deepseek-v4.1-flash')
+  assert.equal(record.requestedModel, 'deepseek/deepseek-v4.1-flash-1017')
 })
 
 test('availability lookup does not consume model tokens or require customer contact', async () => {
@@ -70,7 +69,7 @@ test('business hours use DeepSeek with reusable prefix, output cap, no premium f
   } })
   for (const question of ['Should I hire a second technician?', 'Should I change my opening hours?']) {
     const response = await handler(post(question))
-    assert.equal(response.headers.get('x-board-primary-model'), 'deepseek/deepseek-v4.1-flash')
+    assert.equal(response.headers.get('x-board-primary-model'), 'deepseek/deepseek-v4.1-flash-1017')
     assert.equal(response.headers.get('x-board-fallback-models'), '')
     assert.equal(response.headers.get('x-board-repeat-sessions'), 'true')
     assert.equal(await response.text(), 'Complete decision brief.')
