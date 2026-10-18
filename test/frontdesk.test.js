@@ -273,6 +273,19 @@ test('the text message stays short and the email lists the call facts', () => {
   assert.match(composeFrontdeskMessage(readFrontdeskMessage({})).subject, /Front desk message from an unknown number/);
 });
 
+test('the owner email includes an https call recording link and drops unsafe schemes', () => {
+  const direct = readFrontdeskMessage(callPayload({ recording_url: 'https://example.test/call.mp3' }));
+  assert.equal(direct.recordingUrl, 'https://example.test/call.mp3');
+  assert.match(composeFrontdeskMessage(direct).body, /Call recording \(MP3\): https:\/\/example\.test\/call\.mp3/);
+
+  const parsed = readFrontdeskMessage(callPayload({ post_prompt_data: { raw: 'x', parsed: JSON.stringify({ recording_url: 'https://example.test/parsed.mp3' }) } }));
+  assert.equal(parsed.recordingUrl, 'https://example.test/parsed.mp3');
+
+  const unsafe = readFrontdeskMessage(callPayload({ recording_url: 'http://example.test/call.mp3' }));
+  assert.equal(unsafe.recordingUrl, '');
+  assert.doesNotMatch(composeFrontdeskMessage(unsafe).body, /Call recording/);
+});
+
 test('the real events table accepts a front desk row and suppresses the repeat', async t => {
   const client = new PGlite();
   t.after(() => client.close());
