@@ -17,6 +17,8 @@ test('a daily run records real checks, writes a backup, and verifies it', async 
   const pg = new PGlite(); const db = drizzle(pg);
   const monitor = createMonitor({ getDb: () => db, mail: async () => true, env, fetcher: okFetch, tlsDays: async () => 45 });
   try {
+    await pg.query('CREATE TABLE legacy_contacts (id uuid PRIMARY KEY, name text NOT NULL, email text NOT NULL)');
+    await pg.query("INSERT INTO legacy_contacts(id,name,email) VALUES ('11111111-1111-4111-8111-111111111111','A','a@example.com'),('22222222-2222-4222-8222-222222222222','B','b@example.com')");
     const result = await monitor.daily();
     assert.equal(result.http, true);
     assert.equal(result.tls, true);
@@ -25,6 +27,10 @@ test('a daily run records real checks, writes a backup, and verifies it', async 
     assert.equal((await pg.query('SELECT count(*)::int AS n FROM legacy_monitor_checks')).rows[0].n, 3);
     assert.equal((await pg.query("SELECT count(*)::int AS n FROM legacy_monitor_checks WHERE kind='tls' AND ok")).rows[0].n, 1);
     assert.equal((await pg.query('SELECT sha256 FROM legacy_backups')).rows[0].sha256.length, 64);
+    assert.match((await pg.query('SELECT payload FROM legacy_backups')).rows[0].payload, /"tables"/);
+    const receipt = await monitor.receipt();
+    assert.equal(receipt.restore.ok, true);
+    assert.equal(receipt.restore.exported.legacy_contacts, 2);
   } finally { await pg.close(); }
 });
 
@@ -66,7 +72,7 @@ test('the monthly receipt is emailed with a signed page and the page is owner-on
     assert.equal(page.status, 200);
     const html = await page.text();
     assert.match(html, /Monthly monitoring receipt/);
-    assert.match(html, /application-level export/);
+    assert.match(html, /exports real rows/);
     assert.match(html, /Backup restore test:<\/b> passed/);
   } finally { await pg.close(); }
 });
