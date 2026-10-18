@@ -1111,6 +1111,7 @@ Auto body & collision; plumbers, HVAC and contractors; chiropractic & wellness; 
 - Voice-to-report: https://legacyai.space/voice-report/ — speak or type job notes, review and edit a polished report, and download the PDF.
 - Booking without the back-and-forth: https://legacyai.space/booking/
 - Missed-call recovery: https://legacyai.space/missed-call/
+- Customer notes: https://legacyai.space/reviews/ — real customer words, published only with permission.
 
 ## Live client sites
 - Precision Sewer Inspections: https://precisionsewerinspections.com/ — sewer scope inspections across Central Indiana with online booking and one-business-day HD video reports.

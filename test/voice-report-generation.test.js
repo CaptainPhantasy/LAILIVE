@@ -12,6 +12,34 @@ const draft = { customer: '', location: '', jobDate: '', preparedBy: '', section
 const passed = Object.fromEntries(Object.keys(reportReview.shape).map(key => [key, true]));
 const providerResult = (output, id) => ({ output, totalUsage: { inputTokens: 300, outputTokens: 140, inputTokenDetails: { cacheReadTokens: 100 } }, providerMetadata: { gateway: { generationId: id, cost: '0.0008' } }, finishReason: 'stop' });
 
+test('charged malformed-output attempts are included in total cost or make it unknown', async () => {
+  for (const measured of [true, false]) {
+    let calls = 0; const logs = [];
+    const generate = createVoiceReportGeneration({ env: {}, gateway: name => name, log: value => logs.push(value), generate: async () => {
+      if (++calls === 1) throw Object.assign(new Error('private output must not be logged'), {
+        name: 'AI_NoObjectGeneratedError', ...(measured ? providerResult(undefined, 'failed-draft') : {}),
+      });
+      return providerResult(calls === 2 ? structuredClone(draft) : passed, `success-${calls}`);
+    } });
+    await generate(note);
+    assert.equal(calls, 3);
+    if (measured) assert.ok(Math.abs(logs.at(-1).costUsd - 0.0024) < 1e-12);
+    else assert.equal(logs.at(-1).costUsd, null);
+    assert.equal(logs.at(-1).costBasis, measured ? 'gateway-reported' : 'unavailable');
+    assert.equal(logs.filter(entry => entry.event === 'voice_report_usage').length, 3);
+    assert.doesNotMatch(JSON.stringify(logs), /private output/);
+  }
+});
+
+test('a repeated malformed-output failure stops after two attempts', async () => {
+  let calls = 0;
+  const generate = createVoiceReportGeneration({ env: {}, gateway: name => name, log: () => {}, generate: async () => {
+    calls++; throw Object.assign(new Error('no object'), { name: 'AI_NoObjectGeneratedError' });
+  } });
+  await assert.rejects(generate(note), /no object/);
+  assert.equal(calls, 2);
+});
+
 test('messy note becomes professional prose only after a separate factual review; logs contain cost and IDs but no notes', async () => {
   const calls = [], logs = [];
   const generate = createVoiceReportGeneration({ env: {}, gateway: name => name, log: value => logs.push(value), generate: async options => {

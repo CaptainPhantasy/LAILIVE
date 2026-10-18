@@ -11,6 +11,18 @@ const env = { AI_GATEWAY_API_KEY: 'test-only-not-a-credential', BOARD_REPEAT_SES
 const monday = Date.parse('2026-10-19T12:00:00Z')
 const post = question => new Request('https://example.test/api/board', { method: 'POST', body: JSON.stringify({ question }) })
 
+test('Board model overrides use their own provider rather than the DeepSeek filter', () => {
+  for (const model of ['anthropic/claude-sonnet-4.6', 'openai/gpt-5']) {
+    const policy = boardPolicy({ BOARD_MODEL: model }, monday)
+    assert.equal(policy.model, model)
+    const options = boardGenerationOptions(policy)
+    assert.equal(options.providerOptions.gateway.only, undefined)
+    assert.equal(options.reasoning, undefined)
+  }
+  const options = boardGenerationOptions(boardPolicy({ BOARD_MODEL: 'deepseek/another-model' }, monday))
+  assert.deepEqual(options.providerOptions.gateway.only, ['deepseek'])
+})
+
 test('Indiana business clock handles exact boundaries, weekends and daylight saving', () => {
   for (const [date, expected] of [
     ['2026-10-19T11:59:59Z', false], ['2026-10-19T12:00:00Z', true],

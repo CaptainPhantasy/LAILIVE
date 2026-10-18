@@ -4,6 +4,7 @@ import { scryptSync } from 'node:crypto';
 import { PGlite } from '@electric-sql/pglite';
 import { drizzle } from 'drizzle-orm/pglite';
 import { createOwnerDocumentHandler } from '../lib/owner-documents.js';
+import { pinDigits } from '../lib/owner-documents-core.js';
 import { OWNER_ADDRESSES } from '../lib/frontdesk.js';
 const salt = '0123456789abcdef0123456789abcdef';
 const env = { RECEPTIONIST_WEBHOOK_SECRET: 'test-webhook', RECEPTIONIST_SESSION_SECRET: 'test-session-secret-at-least24characters', FRONTDESK_OWNER_PIN_HASH: `${salt}:${scryptSync('123456', salt, 32).toString('hex')}`, FRONTDESK_PUBLIC_ORIGIN: 'https://legacyai.space' };
@@ -15,11 +16,12 @@ test('PIN owner draft PDF edit and explicit approval use durable records with no
   assert.equal((await handlers.owner(req({ call_id: 'call-owner', arguments: { content: 'forged' } }))).status, 401);
   const denied = await (await handlers.owner(req({ call: { call_id: 'call-owner', from: '+19999999999' }, vars: { prompt_value: '123456' } }))).json();
   assert.ok(!JSON.stringify(denied).includes('save_owner_draft'));
+  assert.match(denied.sections.main[0].play.url, /^say:/);
   const verified = await (await handlers.owner(req({ call: { call_id: 'call-owner', from: '+18123405761' }, vars: { prompt_value: '123456' } }))).json();
   assert.ok(verified.sections.main.find(step=>step.record_call));
   const tool = verified.sections.main.find(step=>step.ai).ai.SWAIG.functions[0];
   assert.ok(!JSON.stringify(verified).includes('123456'));
-  const draft = { call_id: 'call-owner', arguments: { kind: 'field_report', title: 'Test report', content: 'Inspected the entrance. No damage observed.', recipient: 'customer@example.test' } };
+  const draft = { call_id: 'call-owner', argument: { kind: 'field_report', title: 'Test report', content: 'Inspected the entrance. No damage observed.', recipient: 'customer@example.test' } };
   const saved = await (await handlers.owner(req(draft, tool.web_hook_url, false))).json();
   assert.match(saved.response, /saved/); assert.equal(sent.length, 2);
   assert.ok(sent.every(mail => mail.to !== 'customer@example.test'));
@@ -169,4 +171,49 @@ test('one-time PIN setup expires, rejects wrong setup key and cannot overwrite a
  const handler=createOwnerPinHandler({getDb:()=>db,env,authorize:async()=>{const e=new Error();e.status=401;throw e;}});
  const req=key=>new Request('https://example.com/api/owner/pin',{method:'POST',headers:{'x-owner-pin-setup':key},body:JSON.stringify({pin:'619247',confirm:'619247'})});
  try{assert.equal((await handler(req('wrong'))).status,401);assert.equal((await handler(req('test-only-setup'))).status,200);assert.equal((await handler(req('test-only-setup'))).status,409);env.FRONTDESK_PIN_SETUP_EXPIRES='1';assert.equal((await handler(req('test-only-setup'))).status,401);}finally{await pg.close();}
+});
+
+test('a correct PIN survives spacing, clears the failure count, and only wrong tries lock the call', async () => {
+  const pg = new PGlite(); const db = drizzle(pg);
+  const handlers = createOwnerDocumentHandler({ getDb: () => db, env, mail: async () => true });
+  const pin = (callId, value) => req({ call: { call_id: callId, from: '+18123405761' }, vars: { prompt_value: value } });
+  try {
+    // Digits relayed with spaces still verify.
+    const spaced = await (await handlers.owner(pin('call-spaced', '1 2 3 4 5 6'))).json();
+    assert.ok(spaced.sections.main.find(step => step.record_call));
+    const rows = (await pg.query('SELECT count(*)::int AS count FROM legacy_owner_pin_attempts')).rows[0];
+    assert.equal(rows.count, 0);
+
+    // Two wrong tries accrue, the correct one still works, and the row is cleared.
+    for (const value of ['000000', '111111']) await handlers.owner(pin('call-tries', value));
+    const afterTwo = (await pg.query("SELECT attempts FROM legacy_owner_pin_attempts WHERE call_id='call-tries'")).rows[0];
+    assert.equal(afterTwo.attempts, 2);
+    const correct = await (await handlers.owner(pin('call-tries', '123456'))).json();
+    assert.ok(correct.sections.main.find(step => step.record_call));
+    const cleared = (await pg.query("SELECT count(*)::int AS count FROM legacy_owner_pin_attempts WHERE call_id='call-tries'")).rows[0];
+    assert.equal(cleared.count, 0);
+
+    // Three wrong tries end that call; a fourth try is refused with the lockout message.
+    for (const value of ['000000', '111111', '999999']) await handlers.owner(pin('call-lock', value));
+    const locked = await (await handlers.owner(pin('call-lock', '123456'))).json();
+    assert.match(JSON.stringify(locked), /Too many PIN attempts/);
+  } finally { await pg.close(); }
+});
+
+test('a PIN spoken as words or dialed as digits both verify', async () => {
+  assert.equal(pinDigits('05282014'), '05282014');
+  assert.equal(pinDigits('0 5 2 8 2 0 1 4'), '05282014');
+  assert.equal(pinDigits('05282014#'), '05282014');
+  assert.equal(pinDigits('zero five two eight two zero one four'), '05282014');
+  assert.equal(pinDigits('oh five two eight two oh one four'), '05282014');
+  assert.equal(pinDigits('cero cinco dos ocho dos cero uno cuatro'), '05282014');
+  assert.equal(pinDigits('nothing useful here'), '');
+
+  const pg = new PGlite(); const db = drizzle(pg);
+  const handlers = createOwnerDocumentHandler({ getDb: () => db, env, mail: async () => true });
+  const call = value => req({ call: { call_id: 'call-spoken', from: '+18123405761' }, vars: { prompt_value: value } });
+  try {
+    const spoken = await (await handlers.owner(call('one two three four five six'))).json();
+    assert.ok(spoken.sections.main.find(step => step.record_call));
+  } finally { await pg.close(); }
 });

@@ -13,6 +13,7 @@ const pages = {
   '/voice-report/': 'dist/voice-report/index.html',
   '/booking/': 'dist/booking/index.html',
   '/missed-call/': 'dist/missed-call/index.html',
+  '/areas/': 'dist/areas/index.html',
 };
 const ld = html => [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].map(m => JSON.parse(m[1]));
 
@@ -48,7 +49,10 @@ test('the owner workspace stays out of search indexes while staying crawlable', 
 test('the sitemap lists exactly the public pages and nothing else', () => {
   const sitemap = read('dist/sitemap.xml');
   const locs = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(m => m[1]);
-  assert.deepEqual(new Set(locs), new Set(Object.keys(pages).map(route => `https://legacyai.space${route}`)));
+  // /reviews/ is generated on every build and is listed even when no note is
+  // approved, so it belongs in the expected set rather than the page map.
+  const routes = [...Object.keys(pages), '/reviews/'];
+  assert.deepEqual(new Set(locs), new Set(routes.map(route => `https://legacyai.space${route}`)));
 });
 
 test('the service list in the structured data matches the catalog exactly', () => {
