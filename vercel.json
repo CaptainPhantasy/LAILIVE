@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
-  "buildCommand": "node --test test/frontdesk.test.js test/frontdesk-sms.test.js test/owner-documents.test.js test/owner-documents-core.test.js test/zapier-owner-sms.test.js && npm run build",
+  "buildCommand": "node --test test/frontdesk.test.js test/frontdesk-sms.test.js test/owner-documents.test.js test/owner-documents-core.test.js test/zapier-owner-sms.test.js test/booking-live.test.js test/receptionist-booking.test.js && npm run build",
   "outputDirectory": ".vercel-static",
   "installCommand": "npm ci --ignore-scripts --no-audit --no-fund",
   "functions": {

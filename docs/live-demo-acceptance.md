@@ -35,11 +35,32 @@ the protected Vercel preview. No measured per-use price or unlimited-use claim
 has been made; repeat access remains deliberately disabled pending evidence.
 
 A real Google Calendar freeBusy request succeeded through the existing connected
-account. The separate Zapier MCP endpoint used by the application does not yet
-expose the required calendar actions. Set BOOKING_ZAPIER_MCP_URL,
-BOOKING_ZAPIER_GET_TOOL and BOOKING_ZAPIER_WRITE_TOOL only after those actions are
-authorized and configured. The existing Calendar account is used; no credential
-rotation or new Google account is needed.
+account. The separate Zapier MCP server used by the application now has its
+Google Calendar API Request (Beta) action enabled with the owner's approval.
+The workspace recovery removed the temporary copy of its existing connection
+URL; Vercel's stored sensitive value cannot be retrieved, and Zapier only shows
+the token when generated. Restore the existing connection URL securely as
+BOOKING_ZAPIER_MCP_URL for the feat/live-service-demos preview branch, then
+inspect tools/list and set BOOKING_ZAPIER_GET_TOOL and BOOKING_ZAPIER_WRITE_TOOL
+to the observed runtime action name. No token was rotated. The existing Calendar
+account is used; no new Google account is needed.
+
+## Calendar isolation
+
+The owner approved calendar access on October 17, 2026, conditional on keeping
+PSI bookings separate. A dedicated **Legacy AI — Darla bookings** calendar was
+created in the existing connected account. Its exact ID is pinned by
+`LEGACY_BOOKING_CALENDAR_ID` in the provider; `BOOKING_CALENDAR_ID` must match.
+The preview branch setting is configured with that ID. Missing, primary or any
+other calendar setting disables all calendar calls before network access.
+Availability, event creation and receipt lookup use only this dedicated calendar.
+No PSI calendar events, settings, phone routes or production settings were changed.
+The runtime action is enabled, but the preview remains disabled until the
+existing connection secret and verified runtime tool name are configured. A real
+booking and invitation still need verification before phone booking is advertised.
+The 17 focused Calendar and Darla integration tests pass, including zero network
+calls for every disallowed calendar configuration. This is application isolation;
+it does not narrow the underlying connected Google account's permissions.
 
 SignalWire readback found the existing campaign still Pending. The two additional
 owned numbers remain assigned to PSI resources: 812-998-8227 to its record/SIP
