@@ -108,6 +108,10 @@
     {
       "path": "/api/owner/invoice-chase",
       "schedule": "23 13 * * *"
+    },
+    {
+      "path": "/api/owner/monitor",
+      "schedule": "41 11 * * *"
     }
   ]
 }
