@@ -15,7 +15,7 @@ async function api(path,options={}){
 function action(label,fn){const b=node('button',label);b.type='button';b.onclick=async()=>{b.disabled=true;try{await fn();status('');}catch(e){status(e.message,true);}finally{b.disabled=false;}};return b;}
 async function refresh(){
   status('Loading your private records…');
-  const [c,i]=await Promise.all([api('/api/owner/contacts').then(r=>r.json()),api('/api/owner/inquiries').then(r=>r.json())]);
+  const [c,i,j]=await Promise.all([api('/api/owner/contacts').then(r=>r.json()),api('/api/owner/inquiries').then(r=>r.json()),api('/api/owner/jobs').then(r=>r.json())]);
   $('login').hidden=true;$('workspace').hidden=false;
   $('contacts').replaceChildren();
   if(!c.contacts.length)$('contacts').append(node('p','No identifying visitor details have been saved yet.'));
@@ -32,7 +32,10 @@ async function refresh(){
   $('inquiries').replaceChildren();
   if(!i.inquiries.length)$('inquiries').append(node('p','No inquiries received yet.'));
   i.inquiries.forEach(inquiry=>{const a=node('article','');a.append(node('h3',`${inquiry.name}${inquiry.company?' · '+inquiry.company:''}`),node('p',inquiry.message.slice(0,250)),action('Review inquiry',()=>detail(inquiry.id)));$('inquiries').append(a);});
-  status(`Loaded ${c.contacts.length} recent visitor contacts and ${i.inquiries.length} recent inquiries.`);
+  $('jobs').replaceChildren();
+  if(!j.jobs.length)$('jobs').append(node('p','No jobs yet.'));
+  j.jobs.forEach(job=>{const a=node('article','');a.append(node('h3',`${job.customer} · ${job.jobId}`),node('p',`${job.status.replace('_',' ')}${job.service?' · '+job.service:''}${job.technician?' · '+job.technician:''}${job.source?' · '+job.source:''}`));$('jobs').append(a);});
+  status(`Loaded ${c.contacts.length} recent visitor contacts, ${i.inquiries.length} recent inquiries, and ${j.jobs.length} jobs.`);
 }
 async function detail(id){
   const {inquiry}=await api(`/api/owner/inquiries?id=${encodeURIComponent(id)}`).then(r=>r.json());
