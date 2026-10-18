@@ -2,6 +2,7 @@ import { requestLead } from '/lead-gate.js';
 
 const $ = id => document.getElementById(id);
 const labels = { summary: 'Summary', work_requested: 'Reason for the visit', observations: 'Findings & observations', work_completed: 'Work completed', recommendations: 'Recommendations', next_steps: 'Next steps' };
+const reviewLabels = { allStatementsSupported: 'some statements may not match your notes', quantitiesAndUnitsPreserved: 'quantities or units may differ', uncertaintyAndNegationPreserved: 'uncertainty or negation may have changed', correctionsResolvedFaithfully: 'a spoken correction may not be reflected', completedAndPlannedWorkSeparated: 'planned and completed work may be mixed', noImportantFactsOmitted: 'important details may be missing' };
 const metadataLabels = { customer: 'Customer', location: 'Location', jobDate: 'Visit date', preparedBy: 'Prepared by' };
 let currentReport = null, generatedNote = '', working = false, recognition = null, recording = false, starting = false, ticker, stopTimer, speechStart = 0, speechFailed = false;
 const show = (id, message) => { $(id).textContent = message; $(id).hidden = !message; };
@@ -126,6 +127,13 @@ function refreshSectionChoice() {
 }
 $('section-add').addEventListener('click', () => { const kind = $('section-choice').value; if (kind) { addSection(kind); $(`section-${kind}`).focus(); } });
 
+function showReview(review) {
+  const warning = $('review-warning');
+  if (!review || review.passed !== false) { warning.hidden = true; warning.textContent = ''; return; }
+  const reasons = (review.failedChecks || []).map(key => reviewLabels[key]).filter(Boolean);
+  warning.textContent = `Review before downloading: ${reasons.length ? reasons.join('; ') : 'some statements may need checking'}. Edit the fields below if needed.`;
+  warning.hidden = false;
+}
 function showReport(report) {
   currentReport = report;
   $('report-title').value = report.title;
@@ -155,11 +163,11 @@ $('report-form').addEventListener('submit', async event => {
   if (recording || starting) { $('speech-status').textContent = 'Stop dictation and check your notes before making the report.'; $('dictate').focus(); return; }
   const transcript = $('notes').value.trim();
   if (transcript.length < 35) { show('error', 'Add a little more about the job: what you found, what you did, or what comes next.'); return; }
-  show('error', ''); show('download-error', ''); show('generation-status', 'Organizing the details you supplied…'); setWorking(true);
+  show('error', ''); show('download-error', ''); show('review-warning', ''); $('review-warning').hidden = true; show('generation-status', 'Organizing the details you supplied…'); setWorking(true);
   try {
     const value = await (await post('/api/voice-report', { transcript })).json();
     if (!value?.report?.sections?.length) throw new Error('A complete report did not arrive. Your notes are still here; please try again.');
-    generatedNote = transcript; showReport(value.report);
+    generatedNote = transcript; showReport(value.report); showReview(value.review);
     show('generation-status', 'Your report is ready to review.'); show('download-status', '');
   } catch (error) { show('generation-status', ''); show('error', error.message || 'The report could not be completed. Please try again.'); }
   finally { setWorking(false); updateNoteState(); }

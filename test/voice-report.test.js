@@ -59,6 +59,15 @@ test('public report accepts no owner authorization, consumes persistent limits b
   assert.equal((await response.json()).report.customer, 'Maria López');
 });
 
+test('the report handler returns a review warning without blocking the report', async () => {
+  const handler = createVoiceReportHandler({ getStore: () => ({ consumeLimits: async () => {} }), generate: async () => ({ ...extraction, review: { passed: false, failedChecks: ['allStatementsSupported'] } }) });
+  const response = await handler(request());
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.equal(body.report.customer, 'Maria López');
+  assert.deepEqual(body.review, { passed: false, failedChecks: ['allStatementsSupported'] });
+});
+
 test('foreign origins, oversized notes and extra fields are rejected before paid work', async () => {
   let calls = 0;
   const handler = createVoiceReportHandler({ getStore: () => { calls++; throw new Error('unexpected'); }, generate: async () => { calls++; } });

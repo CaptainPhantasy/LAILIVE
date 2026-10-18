@@ -30,11 +30,34 @@ test('messy note becomes professional prose only after a separate factual review
   assert.doesNotMatch(JSON.stringify(logs), /grease|camera|roots|35 feet|Um,/i);
 });
 
-test('failed meaning check prevents a polished but unfaithful report', async () => {
+test('a failed meaning check returns the grounded report with a review warning', async () => {
   let calls = 0;
-  const generate = createVoiceReportGeneration({ env: {}, gateway: name => name, log: () => {}, generate: async () => ++calls === 1 ? providerResult(draft, 'one') : providerResult({ ...passed, uncertaintyAndNegationPreserved: false }, 'two') });
-  await assert.rejects(generate(note), /source-fidelity review/);
-  assert.equal(calls, 2);
+  const generate = createVoiceReportGeneration({ env: {}, gateway: name => name, log: () => {}, generate: async () => {
+    calls++;
+    if (calls === 1) return providerResult(structuredClone(draft), 'draft');
+    if (calls === 2) return providerResult({ ...passed, uncertaintyAndNegationPreserved: false }, 'review');
+    if (calls === 3) return providerResult(structuredClone(draft), 'revision');
+    return providerResult({ ...passed, uncertaintyAndNegationPreserved: false }, 'review-2');
+  } });
+  const output = await generate(note);
+  assert.equal(calls, 4);
+  assert.equal(output.review.passed, false);
+  assert.deepEqual(output.review.failedChecks, ['uncertaintyAndNegationPreserved']);
+});
+
+test('one revision can clear the review and return a passing report', async () => {
+  let calls = 0;
+  const generate = createVoiceReportGeneration({ env: {}, gateway: name => name, log: () => {}, generate: async () => {
+    calls++;
+    if (calls === 1) return providerResult(structuredClone(draft), 'draft');
+    if (calls === 2) return providerResult({ ...passed, allStatementsSupported: false }, 'review');
+    if (calls === 3) return providerResult(structuredClone(draft), 'revision');
+    return providerResult(passed, 'review-2');
+  } });
+  const output = await generate(note);
+  assert.equal(calls, 4);
+  assert.equal(output.review.passed, true);
+  assert.deepEqual(output.review.failedChecks, []);
 });
 
 test('fabricated numbers fail before another provider call; failed provider details stay out of telemetry', async () => {
