@@ -26,6 +26,10 @@ try {
   }
   if (fs.existsSync(path.join(root, 'areas', 'index.html'))) pages.push({ url: '/areas/', priority: '0.7' });
 } catch { /* no area pages configured */ }
+// Customer notes are built by build-testimonials.mjs. The page is listed only when
+// the build produced it, so an unapproved entry can never leave a dead sitemap URL.
+const reviewsPage = fs.existsSync(path.join(root, 'reviews', 'index.html'));
+if (reviewsPage) pages.push({ url: '/reviews/', priority: '0.6' });
 const count = catalog.services.length;
 const summary = `Legacy AI builds and runs pre-built AI systems for owner-operated businesses across Indiana — phone answering, lead follow-up, scheduling, reviews, reporting and customer records. ${count} productized solutions, already in production. One call. One person. One bill.`;
 
@@ -99,7 +103,7 @@ ${catalog.services.map(s => `- ${s.name} (${s.tag}): ${s.body}`).join('\n')}
 - Darla, the Legacy AI receptionist: ${site}/receptionist/
 - Voice-to-report: ${site}/voice-report/ — speak or type job notes, review and edit a polished report, and download the PDF.
 - Booking without the back-and-forth: ${site}/booking/
-- Missed-call recovery: ${site}/missed-call/
+- Missed-call recovery: ${site}/missed-call/${reviewsPage ? `\n- Customer notes: ${site}/reviews/ — real customer words, published only with permission.` : ''}
 
 ## Live client sites
 - Precision Sewer Inspections: https://precisionsewerinspections.com/ — sewer scope inspections across Central Indiana with online booking and one-business-day HD video reports.

@@ -44,4 +44,8 @@
     <loc>https://legacyai.space/areas/</loc>
     <priority>0.7</priority>
   </url>
+  <url>
+    <loc>https://legacyai.space/reviews/</loc>
+    <priority>0.6</priority>
+  </url>
 </urlset>
