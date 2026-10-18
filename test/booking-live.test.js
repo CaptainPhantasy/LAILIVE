@@ -102,6 +102,21 @@ test('unknown write outcome keeps its durable slot hold and reconciles instead o
   assert.equal(provider.calls.length, 1);
 }));
 
+test('a Zapier freeBusy projection of an inserted event stays uncertain until a complete readback', async () => withBooking(async ({ booking, provider, pg }) => {
+  const original = provider.insert;
+  provider.insert = async event => {
+    await original(event);
+    // Observed runtime failure: a cached freeBusy projection removed the event receipt.
+    return { kind: 'calendar#event', timeMin: null, timeMax: null, calendars: null };
+  };
+  const result = await booking.reserve(details);
+  assert.equal(result.booked, false); assert.equal(result.uncertain, true);
+  assert.equal((await pg.query('SELECT status FROM legacy_live_bookings')).rows[0].status, 'uncertain');
+  const reconciled = await booking.reserve(details);
+  assert.equal(reconciled.booked, true); assert.equal(reconciled.replay, true);
+  assert.equal(provider.calls.length, 1);
+}));
+
 test('a pending external write excludes a competing caller before provider completion', async () => withBooking(async ({ booking, provider }) => {
   let release, started;
   const signal = new Promise(resolve => { started = resolve; });
@@ -146,7 +161,7 @@ test('SWAIG endpoint authenticates before database use and never exposes arbitra
 
 test('calendar provider uses exact API calls and accepts observed Zapier resource envelope only', async () => {
   const calls = [];
-  const properties = Object.fromEntries(['url', 'fail_on_errors', 'headers', 'querystring', 'body', 'method'].map(name => [name, {}]));
+  const properties = Object.fromEntries(['url', 'fail_on_errors', 'headers', 'querystring', 'body', 'method', 'output_hint'].map(name => [name, {}]));
   const env = { BOOKING_ZAPIER_MCP_URL: 'https://mcp.zapier.com/api/mcp/test', BOOKING_ZAPIER_GET_TOOL: 'google_get', BOOKING_ZAPIER_WRITE_TOOL: 'google_write', BOOKING_CALENDAR_ID: LEGACY_BOOKING_CALENDAR_ID };
   let responseResource;
   const fetcher = async (_url, init) => {
@@ -167,11 +182,22 @@ test('calendar provider uses exact API calls and accepts observed Zapier resourc
   let action = calls.at(-1).params.arguments;
   assert.equal(action.url, 'https://www.googleapis.com/calendar/v3/freeBusy'); assert.equal(action.method, 'POST');
   assert.deepEqual(JSON.parse(action.body).items, [{ id: LEGACY_BOOKING_CALENDAR_ID }]);
+  assert.match(action.output_hint, /calendar#freeBusy/);
+  assert.match(action.output_hint, /identity jq filter \(\.\)/);
+  assert.doesNotMatch(action.output_hint, /calendar#event|attendees/);
+  const busyHint = action.output_hint;
   responseResource = { kind: 'calendar#event', id: 'abc123', status: 'confirmed' };
   await provider.insert({ id: 'abc123' }); action = calls.at(-1).params.arguments;
   assert.equal(action.url, `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(LEGACY_BOOKING_CALENDAR_ID)}/events?sendUpdates=all`);
+  assert.match(action.output_hint, /calendar#event/);
+  assert.match(action.output_hint, /identity jq filter \(\.\)/);
+  for (const field of ['id', 'status', 'start', 'end', 'attendees', 'organizer', 'extendedProperties']) assert.ok(action.output_hint.includes(field));
+  assert.doesNotMatch(action.output_hint, /calendar#freeBusy|timeMin|timeMax/);
+  assert.notEqual(action.output_hint, busyHint);
+  const eventHint = action.output_hint;
   await provider.get('abc123'); assert.equal(calls.at(-1).params.name, 'google_get');
   assert.equal(calls.at(-1).params.arguments.url, `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(LEGACY_BOOKING_CALENDAR_ID)}/events/abc123`);
+  assert.equal(calls.at(-1).params.arguments.output_hint, eventHint);
   responseResource = { message: 'Success! Appointment booked!' };
   await assert.rejects(provider.get('abc123'), /verifiable resource/);
   const previousCalls = calls.length;
