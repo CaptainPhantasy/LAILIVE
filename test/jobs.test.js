@@ -58,6 +58,28 @@ test('each tap advances exactly one step and completion emails the owners once',
   } finally { await pg.close(); }
 });
 
+test('the owner can request a signed job list that links to every job', async () => {
+  const pg = new PGlite(); const db = drizzle(pg); const sent = [];
+  const handler = createJobHandler({ getDb: () => db, mail: async message => { sent.push(message); return true; }, env });
+  try {
+    await handler(create({ job_id: 'JOB-A', customer_name: 'First Customer', service: 'Repair' }));
+    await handler(create({ job_id: 'JOB-B', customer_name: 'Second Customer', service: 'Install' }));
+    const reply = await handler(create({ action: 'list' }));
+    assert.equal(reply.status, 200);
+    const { url } = await reply.json();
+    assert.match(url, /\/api\/frontdesk\/jobs\?list=/);
+    const list = await handler(new Request(url));
+    const html = await list.text();
+    assert.equal(list.status, 200);
+    assert.match(html, /First Customer/);
+    assert.match(html, /Second Customer/);
+    assert.match(html, /JOB-A/);
+    assert.match(html, /Open job/);
+    assert.match(html, /api\/frontdesk\/jobs\?token=/);
+    assert.equal((await handler(new Request('https://legacyai.space/api/frontdesk/jobs?list=bad'))).status, 401);
+  } finally { await pg.close(); }
+});
+
 test('invalid links and incomplete job payloads are refused', async () => {
   const pg = new PGlite(); const db = drizzle(pg); const sent = [];
   const handler = createJobHandler({ getDb: () => db, mail: async message => { sent.push(message); return true; }, env });
