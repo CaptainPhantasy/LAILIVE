@@ -170,3 +170,30 @@ test('one-time PIN setup expires, rejects wrong setup key and cannot overwrite a
  const req=key=>new Request('https://example.com/api/owner/pin',{method:'POST',headers:{'x-owner-pin-setup':key},body:JSON.stringify({pin:'619247',confirm:'619247'})});
  try{assert.equal((await handler(req('wrong'))).status,401);assert.equal((await handler(req('test-only-setup'))).status,200);assert.equal((await handler(req('test-only-setup'))).status,409);env.FRONTDESK_PIN_SETUP_EXPIRES='1';assert.equal((await handler(req('test-only-setup'))).status,401);}finally{await pg.close();}
 });
+
+test('a correct PIN survives spacing, clears the failure count, and only wrong tries lock the call', async () => {
+  const pg = new PGlite(); const db = drizzle(pg);
+  const handlers = createOwnerDocumentHandler({ getDb: () => db, env, mail: async () => true });
+  const pin = (callId, value) => req({ call: { call_id: callId, from: '+18123405761' }, vars: { prompt_value: value } });
+  try {
+    // Digits relayed with spaces still verify.
+    const spaced = await (await handlers.owner(pin('call-spaced', '1 2 3 4 5 6'))).json();
+    assert.ok(spaced.sections.main.find(step => step.record_call));
+    const rows = (await pg.query('SELECT count(*)::int AS count FROM legacy_owner_pin_attempts')).rows[0];
+    assert.equal(rows.count, 0);
+
+    // Two wrong tries accrue, the correct one still works, and the row is cleared.
+    for (const value of ['000000', '111111']) await handlers.owner(pin('call-tries', value));
+    const afterTwo = (await pg.query("SELECT attempts FROM legacy_owner_pin_attempts WHERE call_id='call-tries'")).rows[0];
+    assert.equal(afterTwo.attempts, 2);
+    const correct = await (await handlers.owner(pin('call-tries', '123456'))).json();
+    assert.ok(correct.sections.main.find(step => step.record_call));
+    const cleared = (await pg.query("SELECT count(*)::int AS count FROM legacy_owner_pin_attempts WHERE call_id='call-tries'")).rows[0];
+    assert.equal(cleared.count, 0);
+
+    // Three wrong tries end that call; a fourth try is refused with the lockout message.
+    for (const value of ['000000', '111111', '999999']) await handlers.owner(pin('call-lock', value));
+    const locked = await (await handlers.owner(pin('call-lock', '123456'))).json();
+    assert.match(JSON.stringify(locked), /Too many PIN attempts/);
+  } finally { await pg.close(); }
+});
