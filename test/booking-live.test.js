@@ -117,6 +117,43 @@ test('a Zapier freeBusy projection of an inserted event stays uncertain until a 
   assert.equal(provider.calls.length, 1);
 }));
 
+test('reconcile confirms a stored uncertain reservation from the calendar without inserting a second event', async () => withBooking(async ({ booking, provider, pg }) => {
+  const original = provider.insert;
+  provider.insert = async event => { await original(event); throw new Error('Response lost'); };
+  assert.equal((await booking.reserve(details)).booked, false);
+  const row = (await pg.query('SELECT request_id, event_id FROM legacy_live_bookings')).rows[0];
+  const result = await booking.reconcile({ requestId: row.request_id });
+  assert.equal(result.booked, true); assert.equal(result.reconciled, true); assert.equal(result.status, 'confirmed');
+  assert.equal(result.eventId, row.event_id); assert.equal(result.alreadyConfirmed, false);
+  assert.equal((await pg.query('SELECT status FROM legacy_live_bookings')).rows[0].status, 'confirmed');
+  assert.equal(provider.calls.length, 1);
+  let reads = 0; const read = provider.get;
+  provider.get = async id => { reads++; return read(id); };
+  assert.equal((await booking.reconcile({ requestId: row.request_id })).alreadyConfirmed, true);
+  assert.equal(reads, 0);
+}));
+
+test('reconcile never confirms a cancelled, moved, missing or foreign reservation', async () => withBooking(async ({ booking, provider, pg }) => {
+  const original = provider.insert;
+  provider.insert = async event => { await original(event); throw new Error('Response lost'); };
+  await booking.reserve(details);
+  const row = (await pg.query('SELECT request_id, event_id FROM legacy_live_bookings')).rows[0];
+  const event = provider.events.get(row.event_id), status = async () => (await pg.query('SELECT status FROM legacy_live_bookings')).rows[0].status;
+  provider.events.set(event.id, { ...event, status: 'cancelled' });
+  assert.equal((await booking.reconcile({ requestId: row.request_id })).mismatch, true);
+  provider.events.set(event.id, { ...event, extendedProperties: { private: { legacyBooking: 'someone-else' } } });
+  assert.equal((await booking.reconcile({ requestId: row.request_id })).mismatch, true);
+  provider.events.set(event.id, { ...event, start: { dateTime: '2026-10-19T18:00:00Z' } });
+  assert.equal((await booking.reconcile({ requestId: row.request_id })).mismatch, true);
+  provider.events.delete(event.id);
+  const missing = await booking.reconcile({ requestId: row.request_id });
+  assert.equal(missing.booked, false); assert.equal(missing.uncertain, true);
+  assert.equal(await status(), 'uncertain');
+  assert.equal((await booking.reconcile({ requestId: 'no-such-request' })).status, 'not_found');
+  assert.equal((await booking.reconcile({ requestId: 'bad id!' })).status, 'invalid');
+  assert.equal(provider.calls.length, 1);
+}));
+
 test('a pending external write excludes a competing caller before provider completion', async () => withBooking(async ({ booking, provider }) => {
   let release, started;
   const signal = new Promise(resolve => { started = resolve; });
@@ -147,7 +184,7 @@ test('an unverified event response cannot confirm or release the slot', async ()
 
 test('SWAIG endpoint authenticates before database use and never exposes arbitrary actions', async () => {
   let calls = 0;
-  const booking = { configured: true, rate: async () => true, availability: async () => { calls++; return { slots: [] }; }, reserve: async args => { calls++; return { booked: true, requestId: args.requestId }; } };
+  const booking = { configured: true, rate: async () => true, availability: async () => { calls++; return { slots: [] }; }, reserve: async args => { calls++; return { booked: true, requestId: args.requestId }; }, reconcile: async args => { calls++; return { booked: true, reconciled: true, requestId: args.requestId }; } };
   const handler = createLiveBookingHandler({ env: { RECEPTIONIST_WEBHOOK_SECRET: 'test-secret' }, booking });
   const req = (body, auth = true) => new Request('https://legacyai.space/api/frontdesk/booking', { method: 'POST', headers: { ...(auth ? { 'x-frontdesk-secret': 'test-secret' } : {}) }, body: JSON.stringify(body) });
   const body = { function: 'check_availability', call_id: 'call-123', argument: { parsed: [{}] } };
@@ -157,6 +194,8 @@ test('SWAIG endpoint authenticates before database use and never exposes arbitra
   const response = await handler(req({ ...body, function: 'book_appointment', argument: { parsed: [{ ...details, requestId: 'attacker-chosen' }] } }));
   const result = JSON.parse((await response.json()).response);
   assert.match(result.requestId, /^call-123:/);
+  const reconciled = await handler(req({ ...body, function: 'reconcile_booking', argument: { parsed: [{ requestId: 'darla:abc:123' }] } }));
+  assert.deepEqual(JSON.parse((await reconciled.json()).response), { booked: true, reconciled: true, requestId: 'darla:abc:123' });
 });
 
 test('calendar provider uses exact API calls and accepts observed Zapier resource envelope only', async () => {
