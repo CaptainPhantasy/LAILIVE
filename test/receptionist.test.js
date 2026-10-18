@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createReceptionistHandler, groundTurn, receptionistInput, receptionistInstructions } from '../lib/receptionist.js';
+import { createReceptionistHandler, groundTurn, receptionistInput, receptionistInstructions, cancelled } from '../lib/receptionist.js';
 import { parseServices, buildProfile, offeredSlots, callRecord } from '../dist/receptionist/core.js';
 
 const id = '3351ea89-24df-4b67-9364-8d57c538a6be';
@@ -175,4 +175,13 @@ test('the API returns the safe reply used by the transcript, speech and call rec
   const record = callRecord({ profile, slots, messages: [{ role: 'receptionist', content: value.reply }], turn: value });
   assert.match(record, /Appointment: None/);
   assert.doesNotMatch(record, /Friday|is confirmed|sent a text/);
+});
+
+test('a negated cancel keeps the hold and a plain cancel releases it', () => {
+  assert.equal(cancelled("don't cancel the hold"), false);
+  assert.equal(cancelled('I do not want to cancel'), false);
+  assert.equal(cancelled('no canceles la reserva'), false);
+  assert.equal(cancelled('please cancel the hold'), true);
+  assert.equal(cancelled('cancele la reserva'), true);
+  assert.equal(cancelled('no longer want the hold'), true);
 });

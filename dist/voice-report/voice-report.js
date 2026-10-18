@@ -88,7 +88,7 @@ $('example').addEventListener('click', () => {
 });
 
 async function post(url, body) {
-  const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 55000);
+  const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 95000);
   try {
     const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify(body), signal: controller.signal });
     if (!response.ok) {

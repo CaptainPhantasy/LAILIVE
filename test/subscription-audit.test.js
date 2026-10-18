@@ -78,3 +78,21 @@ test('an unusable file is refused with a plain reason', async () => {
     assert.match((await response.json()).error, /date, description, and amount columns/);
   } finally { await pg.close(); }
 });
+
+test('a statement in two currencies reports two totals instead of adding them', () => {
+  const data = {
+    headers: ['Date', 'Description', 'Amount'],
+    rows: [
+      { values: ['2026-08-02', 'NETFLIX.COM 9012', '10 USD'] },
+      { values: ['2026-09-02', 'NETFLIX.COM 9012', '10 USD'] },
+      { values: ['2026-08-03', 'EU HOSTING GMBH', '20 EUR'] },
+      { values: ['2026-09-03', 'EU HOSTING GMBH', '20 EUR'] },
+    ],
+  };
+  const report = analyzeCharges(data);
+  assert.equal(report.currency, null);
+  assert.equal(report.monthly_cents, null);
+  assert.equal(report.monthly_by_currency.USD, 1000);
+  assert.equal(report.monthly_by_currency.EUR, 2000);
+  assert.deepEqual(report.subscriptions.map(item => item.currency).sort(), ['EUR', 'USD']);
+});

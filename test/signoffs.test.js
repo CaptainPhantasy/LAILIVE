@@ -81,3 +81,19 @@ test('the signed PDF renders and unsupported signature characters are rejected',
     assert.match(text, /Signed by Pat Doe/);
   } finally { await pg.close(); }
 });
+
+test('a failed signature write leaves the document unsigned', async () => {
+  const pg = new PGlite(); const db = drizzle(pg);
+  try {
+    const id = await setup(pg);
+    const handler = createSignoffHandler({ getDb: () => db, mail: async () => true, env });
+    await handler(new Request(urlFor(id)));
+    await pg.query('ALTER TABLE legacy_document_signatures ADD CONSTRAINT force_fail CHECK (false)');
+    const response = await handler(sign(id, { name: 'Pat Customer', agree: 'yes' }));
+    assert.equal(response.status, 500);
+    const row = (await pg.query('SELECT status FROM legacy_owner_documents WHERE id=$1::uuid', [id])).rows[0];
+    assert.equal(row.status, 'sent');
+    const signatures = (await pg.query('SELECT count(*)::int AS count FROM legacy_document_signatures')).rows[0];
+    assert.equal(signatures.count, 0);
+  } finally { await pg.close(); }
+});

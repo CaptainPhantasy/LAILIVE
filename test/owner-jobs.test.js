@@ -52,3 +52,13 @@ test('a store failure returns a safe error instead of leaking detail', async () 
   assert.equal(response.status, 500);
   assert.equal((await response.json()).error, 'The job list could not be loaded.');
 });
+
+test('a fresh deployment with no tables shows an empty list instead of failing', async () => {
+  const pg = new PGlite(); const db = drizzle(pg);
+  try {
+    const handler = createOwnerJobsHandler({ getDb: () => db, requireOwner: async () => ({}) });
+    const response = await handler(request());
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { jobs: [] });
+  } finally { await pg.close(); }
+});

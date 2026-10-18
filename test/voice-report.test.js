@@ -93,3 +93,10 @@ test('persistent allowance failure cannot fall back to unmetered generation', as
   assert.equal((await handler(request())).status, 429);
   assert.equal(called, false);
 });
+
+test('the browser waits longer than the server budget before aborting', async () => {
+  const { readFileSync } = await import('node:fs');
+  const client = readFileSync('dist/voice-report/voice-report.js', 'utf8');
+  const timeout = Number(client.match(/controller\.abort\(\),\s*(\d+)\)/)?.[1]);
+  assert(Number.isFinite(timeout) && timeout >= 90000, `the browser timer must not fire before the server's 90 second budget (saw ${timeout})`);
+});

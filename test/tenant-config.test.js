@@ -60,3 +60,18 @@ test('an invalid client is refused on save and unknown slugs return 404', async 
     assert.equal((await handler(post({ action: 'nope' }))).status, 400);
   } finally { await pg.close(); }
 });
+
+test('more than ten services are refused rather than partly validated', async () => {
+  const base = {
+    slug: 'acme-plumbing',
+    business: { legal_name: 'Acme Plumbing LLC', trade: 'plumbing', service_area: ['Noblesville'] },
+    routing: { owner_email: 'owner@acme.example', owner_cell: '+18125550100', public_phone: '8125550100', carrier: 'Verizon' },
+    pricing: { diagnostic_fee_cents: 8900, hours: 'Mon-Fri 8-5', emergency_definition: 'Burst pipe or no heat below freezing.', services: Array.from({ length: 11 }, (_, index) => index === 10 ? { name: '', price_cents: -1 } : { name: `Service ${index + 1}`, price_cents: 10000 }) },
+    warranty: { text: 'One year parts and labor.', payment_link: 'on completion' },
+    assets: {},
+  };
+  const checked = validateTenant(base);
+  assert.equal(checked.ok, false);
+  assert.match(checked.errors.join(' '), /At most 10 services are allowed/);
+  assert.match(checked.errors.join(' '), /service 11 needs a name/);
+});
