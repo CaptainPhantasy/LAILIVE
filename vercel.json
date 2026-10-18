@@ -129,6 +129,10 @@
     {
       "path": "/api/owner/prospects",
       "schedule": "13 9 * * *"
+    },
+    {
+      "path": "/api/owner/followups",
+      "schedule": "7 15 * * *"
     }
   ]
 }
