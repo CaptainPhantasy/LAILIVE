@@ -6,6 +6,10 @@ import { drizzle } from 'drizzle-orm/pglite';
 import { createLegacyConciergeAgent } from '../lib/receptionist-concierge.js';
 import { createLiveBooking } from '../lib/booking-live.js';
 
+// The SDK reads SWML_ALLOWED_HOSTS at request time. The preview build sets it to
+// the deployment host; these tests use a synthetic origin.
+process.env.SWML_ALLOWED_HOSTS = '*';
+
 const origin = 'https://preview.example.test';
 const credentials = { origin, webhookSecret: 'w'.repeat(40), sessionSecret: 's'.repeat(40), getStore: () => assert.fail('Booking must not save a generic inquiry') };
 const makeAgent = booking => createLegacyConciergeAgent({ ...credentials, booking });
