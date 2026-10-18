@@ -10,6 +10,7 @@ const pages = {
   '/deal/': 'dist/deal/index.html',
   '/contact-health/': 'dist/contact-health/index.html',
   '/receptionist/': 'dist/receptionist/index.html',
+  '/voice-report/': 'dist/voice-report/index.html',
   '/booking/': 'dist/booking/index.html',
   '/missed-call/': 'dist/missed-call/index.html',
 };

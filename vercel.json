@@ -1,10 +1,18 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
-  "buildCommand": "node --test test/frontdesk.test.js test/frontdesk-sms.test.js test/owner-documents.test.js test/owner-documents-core.test.js test/zapier-owner-sms.test.js && npm run build",
+  "buildCommand": "npm run test:build && npm run build",
   "outputDirectory": ".vercel-static",
   "installCommand": "npm ci --ignore-scripts --no-audit --no-fund",
   "functions": {
+    "api/receptionist-agent.js": {
+      "maxDuration": 60,
+      "includeFiles": "lib/knowledge/**"
+    },
+    "api/receptionist-agent/[...path].js": {
+      "maxDuration": 60,
+      "includeFiles": "lib/knowledge/**"
+    },
     "api/board.js": {
       "maxDuration": 120
     },
@@ -17,11 +25,39 @@
     "api/receptionist.js": {
       "maxDuration": 60
     },
+    "api/receptionist-session.js": {
+      "maxDuration": 60
+    },
+    "api/receptionist-swml.js": {
+      "maxDuration": 60
+    },
     "api/assistant/notify.js": {
       "maxDuration": 30
     },
     "api/frontdesk/message.js": {
       "maxDuration": 60
+    },
+    "api/frontdesk/sms.js": {
+      "maxDuration": 30
+    },
+    "api/frontdesk/owner.js": {
+      "maxDuration": 60
+    },
+    "api/frontdesk/document.js": {
+      "maxDuration": 60
+    },
+    "api/frontdesk/booking.js": {
+      "maxDuration": 60
+    },
+    "api/frontdesk/missed-call.js": {
+      "maxDuration": 30
+    },
+    "api/voice-report.js": {
+      "maxDuration": 120
+    },
+    "api/voice-report-pdf.js": {
+      "maxDuration": 30,
+      "includeFiles": "lib/voice-report-fonts/**"
     }
   },
   "headers": [
@@ -31,6 +67,19 @@
         {
           "key": "X-Robots-Tag",
           "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/contact-health/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
         }
       ]
     },
@@ -64,6 +113,34 @@
     {
       "path": "/api/owner/digest",
       "schedule": "0 23 * * *"
+    },
+    {
+      "path": "/api/owner/review-ladder",
+      "schedule": "17 14 * * *"
+    },
+    {
+      "path": "/api/owner/invoice-chase",
+      "schedule": "23 13 * * *"
+    },
+    {
+      "path": "/api/owner/monitor",
+      "schedule": "41 11 * * *"
+    },
+    {
+      "path": "/api/owner/prospects",
+      "schedule": "13 9 * * *"
+    },
+    {
+      "path": "/api/owner/followups",
+      "schedule": "7 15 * * *"
+    },
+    {
+      "path": "/api/owner/competitors-watch",
+      "schedule": "53 16 * * *"
+    },
+    {
+      "path": "/api/owner/seasonal",
+      "schedule": "29 12 * * *"
     }
   ]
 }

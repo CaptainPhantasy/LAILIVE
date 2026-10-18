@@ -115,7 +115,7 @@ export function analyze(data, mapping) {
   }
   const byRecord = new Map(data.rows.map(row => [row.id, []]));
   issues.forEach(issue => byRecord.get(issue.record).push(issue));
-  return { issues, byRecord, duplicates, summary: { records: data.rows.length, withIssues: [...byRecord.values()].filter(list => list.length).length, exactDuplicates: duplicates.size, possibleConflicts: new Set(issues.filter(i => i.code === 'possible_conflict').map(i => i.record)).size } };
+  return { issues, byRecord, duplicates, summary: { records: data.rows.length, withIssues: [...byRecord.values()].filter(list => list.length).length, exactDuplicates: duplicates.size, possibleConflicts: new Set(issues.filter(i => i.code === 'possible_conflict').map(i => i.record)).size, sharedContacts: new Set(issues.filter(i => i.code === 'shared_contact').map(i => i.record)).size } };
 }
 
 export const formulaLike = value => /^[\s\uFEFF]*[=+\-@]/.test(String(value)) || /^[\t\r\n]/.test(String(value));

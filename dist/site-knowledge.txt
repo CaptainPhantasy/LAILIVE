@@ -1,5 +1,5 @@
 # Legacy AI website knowledge
-Generated from the public pages of legacyai.space. Founder: Douglas Talley, Brown County, Indiana. Phone (812) 412-3454. Email douglas@legacyai.space.
+Generated from the public pages of legacyai.space. Founder: Douglas Talley, Brown County, Indiana. Phone 812-412-3454. Email douglas@legacyai.space.
 
 # PAGE: Home (https://legacyai.space/)
 
@@ -15,7 +15,7 @@ We sell results .
 Tell us what hurts
 →
 
-Rather talk now? Call (812) 412-3454
+Meet Darla, our AI receptionist. Call 812-412-3454 and hear her in action.
 
 Prefer to read first? Download the field guide (PDF, 5.7 MB)
 
@@ -48,13 +48,21 @@ clear from the start
 
 We agree on the scope, value, and next steps before work begins. Then we build around your business, your branding, and your workflow.
 
-Hear it for yourself: call a receptionist set up for your business →
+The receptionist who never calls in works here, too. Her name is Darla. Call 812-412-3454 and hear her in action → Meet Darla
 
 DOC · LAI-2026-DOSSIER-01
 
 STATUS · CERTIFIED IN PRODUCTION
 
 ISSUED · legacyai.space
+
+Try it with a job of your own
+
+## Speak the job. Keep your evening.
+
+Tell us what happened on a job. Turn your spoken or typed notes into a polished report, review and edit the details, then download a PDF you can keep.
+
+Make my report →
 
 The Promise
 
@@ -182,7 +190,7 @@ Voice · Bilingual
 
 Every ring gets answered by a real-sounding voice. Every question handled. Every appointment booked into your calendar. Speaks Spanish too — the customers who used to hang up now book a job.
 
-Every call becomes a customer. Call a receptionist set up for your business →
+She works for us, too. Meet Darla. Call 812-412-3454 and hear her in action → Get to know Darla
 
 Scheduling
 
@@ -787,22 +795,24 @@ Bring the decision you were going to sleep on
 
 Convene the Board
 
-One session per visitor after your inquiry is received. Add your reply details, review the question Douglas will receive, and see the Board report on this page. No email is sent automatically.
+Bring one real decision. Share your reply details with Douglas, then get five perspectives and a practical next step.
 
 ≡ Board report
 
 ## Five perspectives.
 One decision.
-Majority recommendation
+Recommendation
 Dissent
 Risks
 Next steps
 
 Convening the board…
 
+Download your report
+
 ◉ Session complete
 
-That was one session on one decision. The owners who keep a standing seat have the board on call for every decision that comes up — hiring, pricing, acquisitions, pivots, the lot. Ask Douglas about a seat.
+Your report is ready. Talk with Douglas about putting the recommendation to work for your business.
 
 See the deal
 →
@@ -820,38 +830,46 @@ The Standing Seat · always on, tuned to your industry
 The Legacy AI receptionist
 
 ## Meet Darla.
-The receptionist who never calls in works here, too. Call (812) 412-3454 and hear her in action.
-
-What you will hear
+The receptionist who never calls in works here, too. Call our number and hear her in action.
+Call Darla · 812-412-3454 →
 
 ## Your first impression.
 Handled.
 Darla is our AI receptionist. She brings a clear, professional welcome to the other end of the line — the same kind of first impression your customers deserve.
 Ask about Legacy AI, explore what we build, or tell her what your business needs. Start with a conversation.
 
-From one phone call to your own line
+## Prefer to speak through your browser?
 
-## Put it on your real line.
-Explore The Receptionist Who Never Calls In , pair it with missed-call text-backs , or find the right next step .
+Use your microphone to talk with Darla here. You can end the conversation at any time with Hang up.
+
+I agree to let the Legacy AI receptionist process my microphone audio to answer me.
+Speak with Darla in your browser Hang up
+
+Ready to speak with Darla.
 
 # PAGE: Booking calendar preview (https://legacyai.space/booking/)
 
-Try it on your own schedule / Scheduling
+A full calendar. A quieter phone.
 
-## Only the times
-you are free.
-Set your hours, bring your existing calendar, and see exactly which times a customer would be offered. Book one and watch it disappear — no phone tag, no double-booking.
+## More booked jobs.
+Less back-and-forth.
+Your customer wants a time. You want to get on with the job. Give them a clear path to an appointment, built around your hours, your travel time, and the way you work.
 
-On your device
+Start with Darla
 
-## Your calendar stays here.
-Your hours and any calendar file you load are read in this page only. Nothing is uploaded, saved or shared, and no one is invited to anything.
-In production the calendar connects directly to Google, Outlook or your scheduling system and updates as you work.
+## Tell her how
+you work.
+Our receptionist is on the line. Call Darla and tell her what scheduling is costing you in missed time and interruptions.
+Talk to Darla →
+812-412-3454 · Legacy AI’s receptionist
+
+Plan your booking flow · Optional planning tool
+Explore sample appointments and download a calendar file on your device. Your live calendar connection is part of setup.
 
 01
 
-## Set your bookable hours.
-The buffer keeps travel or clean-up time clear before and after every appointment.
+## Make room for the right jobs.
+Choose the hours you want to work. Leave room to travel, clean up, and breathe between jobs.
 
 Days you take appointments
 
@@ -864,7 +882,7 @@ Days to show
 
 02
 
-## Bring your existing calendar.
+## Work around what’s already booked.
 Optional. Export an .ics file from Google Calendar, Outlook or Apple Calendar and load it here. Busy events are blocked out; events marked free or cancelled are ignored.
 
 Choose a calendar file (.ics)
@@ -873,39 +891,47 @@ Remove loaded calendar
 
 03
 
-## What your customers see.
+## See how the schedule fits.
 
-## Book this time
+## Try this time
 
-Customer name What it is for Optional Book it Choose another time
+Customer name What it is for Optional Add to my plan Choose another time
 
-## Booked in this session
-Download bookings (.ics) Clear bookings
-The download adds these test bookings to a calendar only if you choose to import it.
+## Your planned appointments
+Download my plan (.ics) Clear my plan
+Import the downloaded file when you want to add your planned times to a calendar.
 
-From a preview to your website
+Put the back-and-forth behind you
 
-## Let customers book themselves.
-Explore The Live Booking Calendar , let the receptionist book by phone, or talk to Douglas about your calendar
+## Let the calendar
+do its job.
+Keep your attention on the work customers pay you for. Let’s build the booking around your business.
+Talk to Douglas about my booking
+Explore the booking service · Meet Darla
 
 # PAGE: Missed-call text-back builder (https://legacyai.space/missed-call/)
 
-Try it on your own business / SMS · Auto
+Busy doing the work? Keep the next job in reach.
 
-## Every missed call
-gets a text back.
-Write the texts a caller receives seconds after you miss them — during hours, after hours and in Spanish. Each one is checked for length, billing segments and the details carriers expect.
+## Miss a call.
+Keep the customer.
+You’re under a sink, on a ladder, or with another customer. A missed ring shouldn’t hand the next job to somebody else. Put a helpful follow-up behind your phone line and keep the conversation going.
 
-On your device
+Hear the difference
 
-## Nothing is sent from here.
-Your messages are written and checked in this page. No texts are sent and nothing is saved.
-In production, business texting needs a registered number (10DLC) and a caller’s phone call does not by itself give permission for marketing. These checks are guidance, not carrier approval.
+## Darla’s on
+the line.
+Call our receptionist. Tell her what happens when you can’t pick up, and let’s talk about keeping those opportunities in your business.
+Talk to Darla →
+812-412-3454 · Legacy AI’s receptionist
+
+Write your follow-up · Optional message tool
+Draft and download your messages here. Sending is connected during setup.
 
 01
 
-## Your details.
-These fill in the starting messages. You can edit every word afterwards.
+## Make it sound like your business.
+Start with your business name. Add the details you want callers to know, then make every word your own.
 
 Business name
 Online booking link Optional. Use your own domain.
@@ -917,17 +943,20 @@ Write my text-backs
 
 02
 
-## Edit and check.
-Counts update as you type. One segment is 160 plain characters, or 70 when a message uses accents, emoji or curly quotes.
+## Find the right words.
+Edit your messages and see how they read on a phone. Add Spanish versions to welcome more customers.
 
 Preview
 
 Download my messages Copy all messages
 
-From words to a working system
+The next call is worth keeping
 
-## Put it on your phone line.
-Explore The Missed-Call Recovery , or answer every call with the receptionist . Talk to Douglas about text-backs
+## Give every opportunity
+a way back to you.
+Your phone line. Your voice. A follow-up that keeps the customer moving toward your business.
+Talk to Douglas about my follow-up
+Explore missed-call recovery · Meet Darla
 
 # PAGE: Contact-list health check (https://legacyai.space/contact-health/)
 
@@ -1079,8 +1108,9 @@ Auto body & collision; plumbers, HVAC and contractors; chiropractic & wellness; 
 - The Board: https://legacyai.space/board/
 - Contact-list health check: https://legacyai.space/contact-health/
 - Darla, the Legacy AI receptionist: https://legacyai.space/receptionist/
-- Live booking calendar preview: https://legacyai.space/booking/
-- Missed-call text-back builder: https://legacyai.space/missed-call/
+- Voice-to-report: https://legacyai.space/voice-report/ — speak or type job notes, review and edit a polished report, and download the PDF.
+- Booking without the back-and-forth: https://legacyai.space/booking/
+- Missed-call recovery: https://legacyai.space/missed-call/
 
 ## Live client sites
 - Precision Sewer Inspections: https://precisionsewerinspections.com/ — sewer scope inspections across Central Indiana with online booking and one-business-day HD video reports.
@@ -1089,6 +1119,6 @@ Auto body & collision; plumbers, HVAC and contractors; chiropractic & wellness; 
 
 ## Contact
 - Email: douglas@legacyai.space
-- Phone: (812) 412-3454
+- Phone: 812-412-3454
 - Site: https://legacyai.space
 - Field guide (PDF): https://legacyai.space/catalog.pdf

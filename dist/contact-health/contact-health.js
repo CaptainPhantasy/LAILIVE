@@ -34,7 +34,7 @@ $('check-list').addEventListener('click',async()=>{
  receipt=saved;if(currentRevision!==revision){$('status').textContent='Your inquiry was received. The list changed; check it again to review the current records.';return;}
  mapping=nextMapping;report=nextReport;excluded.clear();page=0;
  const summary=$('summary');summary.replaceChildren();
- for(const [key,label] of [['records','Records checked'],['withIssues','Records to review'],['exactDuplicates','Extra exact rows'],['possibleConflicts','Possible conflicts']]){const wrap=node('div');wrap.append(node('dt',label),node('dd',report.summary[key].toLocaleString()));summary.append(wrap);}
+ for(const [key,label] of [['records','Records checked'],['withIssues','Records to review'],['exactDuplicates','Extra exact rows'],['possibleConflicts','Possible conflicts'],['sharedContacts','Shared email or phone']]){const wrap=node('div');wrap.append(node('dt',label),node('dd',report.summary[key].toLocaleString()));summary.append(wrap);}
  $('results').hidden=false;renderRecords();$('results-heading').focus();$('status').textContent=`Inquiry received (${receipt.id}). The local check is ready to review; your customer rows have not been sent.`;
  }catch(e){error(e.message);}finally{checking=false;$('check-list').disabled=false;}
 });

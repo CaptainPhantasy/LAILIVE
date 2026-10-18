@@ -41,7 +41,7 @@ function fakeDb() {
     const text = query.queryChunks ? query.queryChunks.map(c => c?.value?.join?.('') ?? '').join('?') : String(query.sql || '');
     const params = query.queryChunks ? query.queryChunks.filter(c => !c?.value) : [];
     const [first, second] = params;
-    if (/CREATE TABLE|CREATE INDEX/.test(text)) return { rows: [] };
+    if (/CREATE TABLE|CREATE INDEX|ALTER TABLE/.test(text)) return { rows: [] };
     if (/INSERT INTO legacy_frontdesk_calls/.test(text)) {
       if (calls.has(first)) return { rows: [] };
       calls.set(first, { call_id: first, event_id: null, emailed: false, texted: false, text_via: null, text_status: null, delivering: true, claimed_at: new Date(), delivered_at: null });
@@ -273,6 +273,19 @@ test('the text message stays short and the email lists the call facts', () => {
   assert.match(composeFrontdeskMessage(readFrontdeskMessage({})).subject, /Front desk message from an unknown number/);
 });
 
+test('the owner email includes an https call recording link and drops unsafe schemes', () => {
+  const direct = readFrontdeskMessage(callPayload({ recording_url: 'https://example.test/call.mp3' }));
+  assert.equal(direct.recordingUrl, 'https://example.test/call.mp3');
+  assert.match(composeFrontdeskMessage(direct).body, /Call recording \(MP3\): https:\/\/example\.test\/call\.mp3/);
+
+  const parsed = readFrontdeskMessage(callPayload({ post_prompt_data: { raw: 'x', parsed: JSON.stringify({ recording_url: 'https://example.test/parsed.mp3' }) } }));
+  assert.equal(parsed.recordingUrl, 'https://example.test/parsed.mp3');
+
+  const unsafe = readFrontdeskMessage(callPayload({ recording_url: 'http://example.test/call.mp3' }));
+  assert.equal(unsafe.recordingUrl, '');
+  assert.doesNotMatch(composeFrontdeskMessage(unsafe).body, /Call recording/);
+});
+
 test('the real events table accepts a front desk row and suppresses the repeat', async t => {
   const client = new PGlite();
   t.after(() => client.close());
@@ -385,6 +398,7 @@ test('call times sent as Unix microseconds become real call times', () => {
   assert.equal(readFrontdeskMessage(callPayload({ call_start_date: 1791900000000 })).startedAt, '2026-10-13T14:00:00.000Z');
   assert.equal(readFrontdeskMessage(callPayload({ call_start_date: 1791900000 })).startedAt, '2026-10-13T14:00:00.000Z');
   assert.equal(readFrontdeskMessage(callPayload({ call_start_date: 'not a date' })).startedAt, '');
+  assert.equal(readFrontdeskMessage(callPayload({ call_start_date: 1e20 })).startedAt, '');
   assert.equal(readFrontdeskMessage(callPayload({ call_end_date: 0 })).endedAt, '');
 });
 

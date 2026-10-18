@@ -14,3 +14,4 @@ for (const entry of readdirSync(source)) {
 console.log('Prepared Vercel public assets; Board uses the native /api/board function.');
 
 await build({ entryPoints: ['src/owner/app.js'], outfile: '.vercel-static/owner/app.js', bundle: true, minify: true, format: 'esm', platform: 'browser', target: 'es2022' });
+await build({ entryPoints: ['dist/receptionist/signalwire-browser.js'], outfile: '.vercel-static/receptionist/signalwire-browser.js', bundle: true, minify: true, format: 'esm', platform: 'browser', target: 'es2022' });
