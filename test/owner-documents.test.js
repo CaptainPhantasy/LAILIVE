@@ -40,6 +40,37 @@ test('PIN owner draft PDF edit and explicit approval use durable records with no
  } finally { await pg.close(); }
 });
 
+test('a saved Board question generates an analysis, PDF, and owner email from the review page', async () => {
+ const pg = new PGlite(); const db = drizzle(pg); const sent = [];
+ const question = 'Should I raise my diagnostic fee from $89 to $109?';
+ const handlers = createOwnerDocumentHandler({
+  getDb: () => db, env, mail: async value => sent.push(value),
+  generateBoard: async value => { assert.equal(value, question); return 'Recommendation: raise the fee to $109.\nDissent: keep $89 for repeat customers.\nRisks: price-sensitive callers.'; },
+ });
+ try {
+  const verified = await (await handlers.owner(req({ call: { call_id: 'call-board', from: '+18123405761' }, vars: { prompt_value: '123456' } }))).json();
+  const tool = verified.sections.main.find(step=>step.ai).ai.SWAIG.functions[0];
+  const draft = { call_id: 'call-board', arguments: { kind: 'board_request', title: 'Diagnostic fee decision', content: question } };
+  const saved = await (await handlers.owner(req(draft, tool.web_hook_url, false))).json();
+  assert.match(saved.response, /saved/);
+  const link = sent[0].body.match(/https:\/\/legacyai\.space\/api\/frontdesk\/document\?token=\S+/)[0];
+  assert.match(sent[0].body, /Generate Board analysis/);
+  const generate = new FormData(); generate.set('action', 'board'); generate.set('version', '1');
+  assert.equal((await handlers.document(new Request(link, { method: 'POST', body: generate }))).status, 303);
+  const row = (await pg.query('SELECT content,version FROM legacy_owner_documents')).rows[0];
+  assert.equal(row.version, 2);
+  assert.match(row.content, /Board analysis:/);
+  assert.match(row.content, /Recommendation: raise the fee to \$109/);
+  const pdf = await handlers.document(new Request(link + '&pdf=1'));
+  assert.equal(pdf.status, 200); assert.equal(pdf.headers.get('content-type'), 'application/pdf');
+  const memos = sent.filter(mail => mail.subject === 'Board memo: Diagnostic fee decision');
+  assert.equal(memos.length, OWNER_ADDRESSES.length);
+  assert.ok(memos.every(mail => /Board analysis:/.test(mail.body) && /Download PDF/.test(mail.body)));
+  const again = new FormData(); again.set('action', 'board'); again.set('version', '1');
+  assert.equal((await handlers.document(new Request(link, { method: 'POST', body: again }))).status, 409);
+ } finally { await pg.close(); }
+});
+
 test('failed owner review emails retry for the existing draft and PDF validation leaves it editable', async () => {
  const pg = new PGlite(); const db = drizzle(pg); const attempts = [];
  const handlers = createOwnerDocumentHandler({ getDb: () => db, env, mail: async value => { attempts.push(value); if (attempts.length <= 2) throw new Error('mail unavailable'); } });
