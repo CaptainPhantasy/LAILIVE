@@ -42,6 +42,20 @@ test('a contact CSV is audited, cleaned, stored, and emailed as a signed downloa
   } finally { await pg.close(); }
 });
 
+test('the audit reports rows that share an email or phone without merging them', async () => {
+  const pg = new PGlite(); const db = drizzle(pg); const sent = [];
+  const handler = createContactAuditHandler({ getDb: () => db, mail: async message => { sent.push(message); return true; }, env });
+  try {
+    const csv = 'name,email,phone\nAlice,alice@example.com,\nAlice,ALICE@example.com,\nBob,bob@example.com,8125550100\nBob,bob2@example.com,8125550100\n';
+    const body = await (await handler(request({ filename: 'shared.csv', csv }))).json();
+    assert.equal(body.summary.records, 4);
+    assert.equal(body.summary.sharedContacts, 2);
+    assert.equal(body.summary.possibleConflicts, 2);
+    assert.equal(body.summary.rowsKept, 4);
+    assert.match(sent[0].body, /Shared email or phone \(different rows\): 2/);
+  } finally { await pg.close(); }
+});
+
 test('the contact audit rejects a wrong secret and an invalid download token', async () => {
   const pg = new PGlite(); const db = drizzle(pg);
   const handler = createContactAuditHandler({ getDb: () => db, mail: async () => true, env });
