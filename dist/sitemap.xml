@@ -40,4 +40,8 @@
     <loc>https://legacyai.space/board/</loc>
     <priority>0.7</priority>
   </url>
+  <url>
+    <loc>https://legacyai.space/areas/</loc>
+    <priority>0.7</priority>
+  </url>
 </urlset>
