@@ -4,6 +4,7 @@ import { PGlite } from '@electric-sql/pglite';
 import { drizzle } from 'drizzle-orm/pglite';
 import { createReviewRequestHandler } from '../lib/review-requests.js';
 import { OWNER_ADDRESSES } from '../lib/frontdesk.js';
+import { signOwnerToken } from '../lib/owner-documents-core.js';
 
 const env = {
   RECEPTIONIST_SESSION_SECRET: 'test-session-secret-at-least24characters',
@@ -100,5 +101,42 @@ test('invalid and missing tokens are refused and nothing is created', async () =
     assert.equal((await handler(form('bad', { action: 'rate', rating: '5' }))).status, 401);
     assert.equal((await handler(create({ customer_name: 'X', customer_email: 'not-an-email', job_id: 'J' }))).status, 400);
     assert.equal(sent.length, 0);
+  } finally { await pg.close(); }
+});
+
+test('the owner can approve exactly one second ask, and an answered request gets none', async () => {
+  const pg = new PGlite(); const db = drizzle(pg); const sent = [];
+  const handler = createReviewRequestHandler({ getDb: () => db, mail: async message => { sent.push(message); return true; }, env });
+  const secondToken = id => signOwnerToken({ id, scope: 'review-second', exp: Date.now() + 86400000 }, env.RECEPTIONIST_SESSION_SECRET);
+  const secondPage = id => new Request(`https://legacyai.space/api/frontdesk/review?token=${encodeURIComponent(secondToken(id))}`);
+  const secondSend = id => new Request(`https://legacyai.space/api/frontdesk/review?token=${encodeURIComponent(secondToken(id))}`, {
+    method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ token: secondToken(id), action: 'send_second' }),
+  });
+  try {
+    await handler(create({ customer_name: 'Quiet Customer', customer_email: 'quiet@example.com', job_id: 'JOB-SECOND' }));
+    const approval = tokenOf(linkFrom(sent[0].body));
+    await handler(form(approval, { action: 'approve' }));
+    const id = (await pg.query('SELECT id FROM legacy_review_requests')).rows[0].id;
+    assert.match(await (await handler(secondPage(id))).text(), /Send one more request/);
+    const sentFirst = await handler(secondSend(id));
+    assert.match(await sentFirst.text(), /Sent one more review request/);
+    const customerMails = () => sent.filter(message => message.to === 'quiet@example.com');
+    assert.equal(customerMails().length, 2);
+    assert.equal(customerMails().at(-1).subject, 'One more ask, Quiet Customer?');
+    assert.match(await (await handler(secondSend(id))).text(), /already sent/);
+    assert.equal(customerMails().length, 2);
+    assert.equal((await pg.query("SELECT count(*)::int AS n FROM legacy_review_events WHERE event='second_request_sent'")).rows[0].n, 1);
+
+    await handler(create({ customer_name: 'Answered Customer', customer_email: 'answered@example.com', job_id: 'JOB-ANSWERED' }));
+    const approval2 = tokenOf(linkFrom(sent.at(-1).body));
+    await handler(form(approval2, { action: 'approve' }));
+    const id2 = (await pg.query("SELECT id FROM legacy_review_requests WHERE customer_email='answered@example.com'")).rows[0].id;
+    const requestLink = tokenOf(linkFrom(sent.at(-1).body));
+    await handler(form(requestLink, { action: 'rate', rating: '5' }));
+    assert.match(await (await handler(secondPage(id2))).text(), /already answered/);
+    const before = sent.filter(message => message.to === 'answered@example.com').length;
+    await handler(secondSend(id2));
+    assert.equal(sent.filter(message => message.to === 'answered@example.com').length, before);
   } finally { await pg.close(); }
 });

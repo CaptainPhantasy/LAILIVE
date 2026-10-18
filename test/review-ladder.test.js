@@ -42,6 +42,7 @@ test('a stale unanswered request is nudged once and only the owners are emailed'
     assert.equal(sent.length, before + OWNER_ADDRESSES.length);
     assert.ok(sent.slice(before).every(message => OWNER_ADDRESSES.includes(message.to)));
     assert.match(sent.at(-1).body, /No second customer email was sent/);
+    assert.match(sent.at(-1).body, /Approve one second ask: https:\/\/legacyai\.space\/api\/frontdesk\/review\?token=/);
     const second = await ladder();
     assert.equal(second.nudged, 0);
     assert.equal((await pg.query("SELECT count(*)::int AS n FROM legacy_review_events WHERE event='ladder_nudge'")).rows[0].n, 1);
