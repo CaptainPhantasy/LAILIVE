@@ -2,6 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createConciergeFetch, AGENT_ROUTE } from '../lib/receptionist-concierge.js';
 
+process.env.SWML_ALLOWED_HOSTS = '*';
+process.env.SIGNALWIRE_SIGNING_KEY = '';
+
 test('private authentication reasons match SDK outcomes and expose only fixed codes and generated correlation/time', async () => {
   const origin = 'https://preview.example.test';
   const password = 'synthetic:@/%&+?= #é🦉-never-log-this';

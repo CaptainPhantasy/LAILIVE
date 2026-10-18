@@ -10,6 +10,10 @@ import { createLegacyConciergeAgent, createConciergeFetch, knowledgeDocuments, K
 
 const origin = 'https://preview.example.test';
 const env = { VERCEL_ENV: 'preview', RECEPTIONIST_SIGNALWIRE_ENABLED: 'true', RECEPTIONIST_PREVIEW_ORIGIN: origin, RECEPTIONIST_WEBHOOK_SECRET: 'w'.repeat(40), RECEPTIONIST_SESSION_SECRET: 's'.repeat(40) };
+process.env.SWML_ALLOWED_HOSTS = '*';
+process.env.SWML_BASIC_AUTH_USER = 'receptionist';
+process.env.SWML_BASIC_AUTH_PASSWORD = env.RECEPTIONIST_WEBHOOK_SECRET;
+process.env.SIGNALWIRE_SIGNING_KEY = '';
 const authorization = `Basic ${Buffer.from(`receptionist:${env.RECEPTIONIST_WEBHOOK_SECRET}`).toString('base64')}`;
 const options = getStore => ({ origin, webhookSecret: env.RECEPTIONIST_WEBHOOK_SECRET, sessionSecret: env.RECEPTIONIST_SESSION_SECRET, getStore });
 const request = (url, body, authorized = true) => new Request(url, { method: body ? 'POST' : 'GET', headers: { ...(authorized ? { authorization } : {}), ...(body ? { 'content-type': 'application/json' } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}) });

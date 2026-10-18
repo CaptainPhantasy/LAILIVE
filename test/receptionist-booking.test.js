@@ -14,6 +14,7 @@ const origin = 'https://preview.example.test';
 const credentials = { origin, webhookSecret: 'w'.repeat(40), sessionSecret: 's'.repeat(40), getStore: () => assert.fail('Booking must not save a generic inquiry') };
 process.env.SWML_BASIC_AUTH_USER = 'receptionist';
 process.env.SWML_BASIC_AUTH_PASSWORD = credentials.webhookSecret;
+process.env.SIGNALWIRE_SIGNING_KEY = '';
 const makeAgent = booking => createLegacyConciergeAgent({ ...credentials, booking });
 const attemptKey = args => createHash('sha256').update(JSON.stringify({ slotStart: args.slotStart, name: args.name, email: args.email, phone: args.phone, approved: args.approved })).digest('hex');
 function call(agent, callId, name, args) {
