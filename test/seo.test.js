@@ -13,6 +13,7 @@ const pages = {
   '/voice-report/': 'dist/voice-report/index.html',
   '/booking/': 'dist/booking/index.html',
   '/missed-call/': 'dist/missed-call/index.html',
+  '/areas/': 'dist/areas/index.html',
 };
 const ld = html => [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].map(m => JSON.parse(m[1]));
 
