@@ -7,7 +7,7 @@
     "build:seo": "node build-seo.mjs",
     "dev": "node preview.mjs",
     "test": "node --test test/*.test.js",
-    "test:build": "node --test test/frontdesk.test.js test/frontdesk-sms.test.js test/owner-documents.test.js test/owner-documents-core.test.js test/owner-reply.test.js test/contact-audit.test.js test/review-requests.test.js test/review-ladder.test.js test/review-responses.test.js test/jobs.test.js test/signoffs.test.js test/invoices.test.js test/revenue.test.js test/quote-photo.test.js test/import-contacts.test.js test/upsells.test.js test/monitoring.test.js test/prospects.test.js test/site-audit.test.js test/security-baseline.test.js test/content-writer.test.js test/followups.test.js test/owner-jobs.test.js test/subscription-audit.test.js test/zapier-owner-sms.test.js test/booking-live.test.js test/receptionist-booking.test.js"
+    "test:build": "node --test test/frontdesk.test.js test/frontdesk-sms.test.js test/owner-documents.test.js test/owner-documents-core.test.js test/owner-reply.test.js test/contact-audit.test.js test/review-requests.test.js test/review-ladder.test.js test/review-responses.test.js test/jobs.test.js test/signoffs.test.js test/invoices.test.js test/revenue.test.js test/quote-photo.test.js test/import-contacts.test.js test/upsells.test.js test/monitoring.test.js test/prospects.test.js test/site-audit.test.js test/security-baseline.test.js test/content-writer.test.js test/followups.test.js test/owner-jobs.test.js test/subscription-audit.test.js test/competitor-watch.test.js test/zapier-owner-sms.test.js test/booking-live.test.js test/receptionist-booking.test.js"
   },
   "dependencies": {
     "@neondatabase/auth": "0.5.0-beta",
