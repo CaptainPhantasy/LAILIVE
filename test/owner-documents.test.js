@@ -4,6 +4,7 @@ import { scryptSync } from 'node:crypto';
 import { PGlite } from '@electric-sql/pglite';
 import { drizzle } from 'drizzle-orm/pglite';
 import { createOwnerDocumentHandler } from '../lib/owner-documents.js';
+import { pinDigits } from '../lib/owner-documents-core.js';
 import { OWNER_ADDRESSES } from '../lib/frontdesk.js';
 const salt = '0123456789abcdef0123456789abcdef';
 const env = { RECEPTIONIST_WEBHOOK_SECRET: 'test-webhook', RECEPTIONIST_SESSION_SECRET: 'test-session-secret-at-least24characters', FRONTDESK_OWNER_PIN_HASH: `${salt}:${scryptSync('123456', salt, 32).toString('hex')}`, FRONTDESK_PUBLIC_ORIGIN: 'https://legacyai.space' };
@@ -195,5 +196,23 @@ test('a correct PIN survives spacing, clears the failure count, and only wrong t
     for (const value of ['000000', '111111', '999999']) await handlers.owner(pin('call-lock', value));
     const locked = await (await handlers.owner(pin('call-lock', '123456'))).json();
     assert.match(JSON.stringify(locked), /Too many PIN attempts/);
+  } finally { await pg.close(); }
+});
+
+test('a PIN spoken as words or dialed as digits both verify', async () => {
+  assert.equal(pinDigits('05282014'), '05282014');
+  assert.equal(pinDigits('0 5 2 8 2 0 1 4'), '05282014');
+  assert.equal(pinDigits('05282014#'), '05282014');
+  assert.equal(pinDigits('zero five two eight two zero one four'), '05282014');
+  assert.equal(pinDigits('oh five two eight two oh one four'), '05282014');
+  assert.equal(pinDigits('cero cinco dos ocho dos cero uno cuatro'), '05282014');
+  assert.equal(pinDigits('nothing useful here'), '');
+
+  const pg = new PGlite(); const db = drizzle(pg);
+  const handlers = createOwnerDocumentHandler({ getDb: () => db, env, mail: async () => true });
+  const call = value => req({ call: { call_id: 'call-spoken', from: '+18123405761' }, vars: { prompt_value: value } });
+  try {
+    const spoken = await (await handlers.owner(call('one two three four five six'))).json();
+    assert.ok(spoken.sections.main.find(step => step.record_call));
   } finally { await pg.close(); }
 });
