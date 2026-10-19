@@ -100,3 +100,52 @@ test('invalid links are refused', async () => {
     assert.equal((await handler(badToken)).status, 401);
   } finally { await pg.close(); }
 });
+
+test('an approved unsent step can be cancelled and a stale approval cannot reactivate it', async () => {
+  const pg = new PGlite(); const db = drizzle(pg); const sent = [];
+  const handler = createFollowupHandler({ getDb: () => db, mail: async message => { sent.push(message); return true; }, env });
+  try {
+    await setup(pg);
+    await handler(post({ inquiry_id: inquiryId, steps: [steps()[0]] }));
+    const id = (await pg.query('SELECT id FROM legacy_followup_steps')).rows[0].id;
+    await handler(decide(id, 'approve'));
+    const approvedAt = (await pg.query('SELECT approved_at FROM legacy_followup_steps')).rows[0].approved_at;
+    assert(approvedAt);
+    assert.match(await (await handler(decide(id, 'cancel'))).text(), /Step cancelled/);
+    const cancelled = (await pg.query('SELECT status,approved_at FROM legacy_followup_steps')).rows[0];
+    assert.equal(cancelled.status, 'cancelled');
+    assert.deepEqual(cancelled.approved_at, approvedAt, 'the original approval history is preserved');
+    assert.match(await (await handler(decide(id, 'approve'))).text(), /already handled/);
+    assert.equal((await pg.query('SELECT status FROM legacy_followup_steps')).rows[0].status, 'cancelled');
+    assert.equal((await (await handler(post({ action: 'due' }))).json()).sent, 0);
+    assert.equal(sent.filter(message => message.to === 'pat@example.com').length, 0);
+  } finally { await pg.close(); }
+});
+
+test('cancellation cannot interrupt a claimed send or change a sent step', async () => {
+  const pg = new PGlite(); const db = drizzle(pg); const sent = [];
+  let enter, release;
+  const entered = new Promise(resolve => { enter = resolve; });
+  const blocked = new Promise(resolve => { release = resolve; });
+  const handler = createFollowupHandler({ getDb: () => db, env, mail: async message => {
+    if (message.to === 'pat@example.com') { sent.push(message); enter(); await blocked; }
+    return true;
+  } });
+  let sending;
+  try {
+    await setup(pg);
+    await handler(post({ inquiry_id: inquiryId, steps: [steps()[0]] }));
+    const id = (await pg.query('SELECT id FROM legacy_followup_steps')).rows[0].id;
+    await handler(decide(id, 'approve'));
+    sending = handler(post({ action: 'due' }));
+    await entered;
+    assert.match(await (await handler(decide(id, 'cancel'))).text(), /already handled/);
+    assert.equal((await pg.query('SELECT status FROM legacy_followup_steps')).rows[0].status, 'sending');
+    release();
+    assert.equal((await (await sending).json()).sent, 1);
+    assert.match(await (await handler(decide(id, 'cancel'))).text(), /already handled/);
+    assert.match(await (await handler(decide(id, 'approve'))).text(), /already handled/);
+    assert.equal((await pg.query('SELECT status FROM legacy_followup_steps')).rows[0].status, 'sent');
+    assert.equal(sent.length, 1);
+  } finally { release(); if (sending) await sending; await pg.close(); }
+});
