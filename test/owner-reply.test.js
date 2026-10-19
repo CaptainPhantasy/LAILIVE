@@ -345,4 +345,7 @@ test('exact replacements are literal, bounded and leave uncertain targets unchan
   assert.equal(applyOwnerReplyEdit('X' + 'A'.repeat(9999), 'Replace "X" with "YY"').ok, false);
   assert.equal(applyOwnerReplyEdit('Deliver to Sam by Friday', 'Change Deliver to Sam to Deliver to Sue').ok, false);
   assert.equal(applyOwnerReplyEdit('Deliver to Sam by Friday', 'Change "Deliver to Sam" to "Deliver to Sue"').content, 'Deliver to Sue by Friday');
+  assert.equal(applyOwnerReplyEdit('Total: $100', 'Replace $100 with $125.').content, 'Total: $125', 'terminal sentence punctuation is not copied into the document');
+  assert.equal(applyOwnerReplyEdit('Total: $100', 'Change the total to $125.').content, 'Total: $125');
+  assert.equal(applyOwnerReplyEdit('Total: $100', 'Replace "$100" with "$125."').content, 'Total: $125.', 'quoted replacement punctuation is preserved');
 });

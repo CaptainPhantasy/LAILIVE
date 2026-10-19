@@ -226,6 +226,23 @@ test('an older slow failed run cannot reopen an incident after a newer healthy r
   } finally { release(); await pg.close(); }
 });
 
+test('a queued alert for a removed recipient is retired instead of blocking the pending count', async () => {
+  const pg = new PGlite(); const db = drizzle(pg); const sent = [];
+  const monitor = createMonitor({ getDb: () => db, env, tlsDays: async () => 5,
+    fetcher: async () => new Response('down', { status: 503 }),
+    mail: async message => { sent.push(message); return true; } });
+  try {
+    await monitor.daily();
+    // A queued alert for an address that later left OWNER_ADDRESSES can never
+    // be leased or accepted; the next run must retire it instead of counting
+    // it as pending forever.
+    const incident = (await pg.query('SELECT id FROM legacy_monitor_incidents LIMIT 1')).rows[0].id;
+    await pg.query('INSERT INTO legacy_monitor_alerts(incident,recipient) VALUES ($1,$2)', [incident, 'gone@example.test']);
+    assert.equal((await monitor.daily()).alerts.pending, 0, 'a removed recipient no longer counts as pending');
+    assert.equal((await pg.query("SELECT count(*)::int AS n FROM legacy_monitor_alerts WHERE recipient='gone@example.test'")).rows[0].n, 0);
+  } finally { await pg.close(); }
+});
+
 test('a monthly receipt rejected by the mail connection is not reported as accepted', async () => {
   const pg = new PGlite(); const db = drizzle(pg);
   const monitor = createMonitor({ getDb: () => db, env, fetcher: okFetch, tlsDays: async () => 45, mail: async () => false });
