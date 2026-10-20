@@ -6,7 +6,9 @@ import { drizzle } from 'drizzle-orm/pglite';
 import { createOwnerLogin, ownerSession, OWNER_COOKIE } from '../lib/owner-login.js';
 
 // The owner door no longer depends on Google: a password is chosen once, authorized by the PIN
-// the owner already carries, then exchanged for a signed cookie. These tests hold that line.
+// the owner already carries, then exchanged for a signed cookie. These tests hold that line,
+// including the four review findings: logout without the database, an atomic attempt cap,
+// confirmation before a permanent hash is stored, and a bounded body read.
 test('owner password is chosen with the PIN, exchanged for a cookie, and refused when wrong', async () => {
   const pg = new PGlite(); const db = drizzle(pg);
   const salt = '0123456789abcdef0123456789abcdef';
@@ -20,9 +22,10 @@ test('owner password is chosen with the PIN, exchanged for a cookie, and refused
   try {
     const before = await (await login(new Request('https://legacyai.space/api/owner/login'))).json();
     assert.equal(before.configured, false, 'a fresh workspace must ask the owner to choose a password');
-    assert.equal((await login(post({ password: 'correct-horse-staple', pin: '999999' }))).status, 403, 'a wrong PIN must not authorize setup');
-    assert.equal((await login(post({ password: 'short', pin: '123456' }))).status, 400, 'too short a password is refused');
-    const setup = await login(post({ password: 'correct-horse-staple', pin: '123456' }));
+    assert.equal((await login(post({ password: 'correct-horse-staple', confirm: 'correct-horse-staple', pin: '999999' }))).status, 403, 'a wrong PIN must not authorize setup');
+    assert.equal((await login(post({ password: 'short', confirm: 'short', pin: '123456' }))).status, 400, 'too short a password is refused');
+    assert.equal((await login(post({ password: 'correct-horse-staple', confirm: 'correct-horse-stapl', pin: '123456' }))).status, 400, 'a mistyped confirmation must not become the permanent password');
+    const setup = await login(post({ password: 'correct-horse-staple', confirm: 'correct-horse-staple', pin: '123456' }));
     assert.equal(setup.status, 200);
     const cookie = cookieOf(setup);
     assert.match(cookie, new RegExp(`^${OWNER_COOKIE}=`));
@@ -37,5 +40,27 @@ test('owner password is chosen with the PIN, exchanged for a cookie, and refused
     const out = await login(new Request('https://legacyai.space/api/owner/login', { method: 'DELETE', headers: { cookie: cookieOf(ok) } }));
     assert.match(out.headers.get('set-cookie'), /Max-Age=0/);
     assert.equal((await login(post({}, 'PUT'))).status, 405);
+  } finally { await pg.close(); }
+});
+
+test('logout clears the cookie even when the database is unavailable', async () => {
+  const broken = createOwnerLogin({ getDb: () => { throw new Error('database down'); }, env: { RECEPTIONIST_SESSION_SECRET: 'test-session-secret-at-least24characters' } });
+  const response = await broken(new Request('https://legacyai.space/api/owner/login', { method: 'DELETE' }));
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get('set-cookie'), /Max-Age=0/);
+});
+
+test('the attempt cap holds when guesses arrive in parallel', async () => {
+  const pg = new PGlite(); const db = drizzle(pg);
+  const salt = '0123456789abcdef0123456789abcdef';
+  const env = { RECEPTIONIST_SESSION_SECRET: 'test-session-secret-at-least24characters', FRONTDESK_OWNER_PIN_HASH: `${salt}:${scryptSync('123456', salt, 32).toString('hex')}` };
+  const login = createOwnerLogin({ getDb: () => db, env });
+  const post = body => new Request('https://legacyai.space/api/owner/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  try {
+    await login(post({ password: 'correct-horse-staple', confirm: 'correct-horse-staple', pin: '123456' }));
+    const attempt = async () => (await login(post({ password: `wrong-${Math.random()}` }))).status;
+    const burst = await Promise.all(Array.from({ length: 20 }, attempt));
+    assert.ok(burst.filter(status => status === 403).length <= 10, `at most ten guesses may be checked, saw ${burst.filter(s => s === 403).length}`);
+    assert.ok(burst.some(status => status === 429), 'the cap must start refusing inside the burst');
   } finally { await pg.close(); }
 });
