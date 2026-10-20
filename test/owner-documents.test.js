@@ -217,3 +217,28 @@ test('a PIN spoken as words or dialed as digits both verify', async () => {
     assert.ok(spoken.sections.main.find(step => step.record_call));
   } finally { await pg.close(); }
 });
+
+// The phone line reaches this endpoint through an SWML transfer. Two credential shapes
+// have to work or the owner hears silence after entering the PIN: the secret inside the
+// body's params object, and a percent-encoded password rewritten into a Basic header.
+// A caller that presents neither must still be refused.
+test('owner transfer accepts a body params secret and an encoded Basic password, and refuses neither', async () => {
+ const pg = new PGlite(); const db = drizzle(pg);
+ const encodedEnv = { ...env, RECEPTIONIST_WEBHOOK_SECRET: 's3cr3t+value/with=chars' };
+ const handlers = createOwnerDocumentHandler({ getDb: () => db, env: encodedEnv, mail: async () => {} });
+ const body = { call: { call_id: 'call-transfer-auth', from: '+19999999999' }, vars: { prompt_value: '123456' } };
+ const post = (headers, payload = body) => new Request('https://legacyai.space/api/frontdesk/owner', { method: 'POST', headers, body: JSON.stringify(payload) });
+ const encoded = encodeURIComponent(encodedEnv.RECEPTIONIST_WEBHOOK_SECRET);
+ const basic = password => `Basic ${Buffer.from(`frontdesk:${password}`).toString('base64')}`;
+ try {
+  assert.equal((await handlers.owner(post({}))).status, 401);
+  assert.equal((await handlers.owner(post({}, { ...body, params: { secret: 'wrong' } }))).status, 401);
+  const fromParams = await handlers.owner(post({}, { ...body, params: { secret: encodedEnv.RECEPTIONIST_WEBHOOK_SECRET } }));
+  assert.equal(fromParams.status, 200);
+  assert.match((await fromParams.json()).sections.main[0].play.url, /^say:Owner access is unavailable/);
+  const fromEncodedBasic = await handlers.owner(post({ authorization: basic(encoded) }));
+  assert.equal(fromEncodedBasic.status, 200);
+  const fromPlainBasic = await handlers.owner(post({ authorization: basic(encodedEnv.RECEPTIONIST_WEBHOOK_SECRET) }));
+  assert.equal(fromPlainBasic.status, 200);
+ } finally { await pg.close(); }
+});
