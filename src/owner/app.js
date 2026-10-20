@@ -1,14 +1,13 @@
-import { createAuthClient } from '@neondatabase/auth';
 const $=id=>document.getElementById(id);
 const node=(tag,text)=>{const el=document.createElement(tag);el.textContent=text;return el;};
 let auth;
 function status(text,error=false){$('status').textContent=text;$('status').classList.toggle('error',error);}
+function showLogin(){ $('workspace').hidden=true; $('login').hidden=false; }
+// The door is a password and an HttpOnly cookie now. No provider, no redirect, and the
+// browser attaches the cookie on its own, so nothing here handles a token.
 async function api(path,options={}){
-  const session=await auth.getSession();
-  if(session.error)throw Error(session.error.message || 'Your sign-in session could not be loaded.');
-  const token=session.data?.session?.token;
-  if(!token)throw Error('Sign in to view your private records.');
-  const r=await fetch(path,{...options,headers:{Authorization:`Bearer ${token}`,Accept:'application/json',...(options.body?{'Content-Type':'application/json'}:{})},cache:'no-store'});
+  const r=await fetch(path,{...options,headers:{Accept:'application/json',...(options.body?{'Content-Type':'application/json'}:{})},cache:'no-store'});
+  if(r.status===401){ showLogin(); throw Object.assign(Error('Enter your owner password to open your workspace.'),{data:{}}); }
   if(!r.ok){let data;try{data=await r.json();}catch{}throw Object.assign(Error(data?.error||'The request could not be completed.'),{data});}
   return r;
 }
@@ -48,9 +47,28 @@ async function detail(id){
 $('pa-form').onsubmit=async event=>{event.preventDefault();$('pa-ask').disabled=true;status('Your PA is reviewing the saved records…');try{const data=await api('/api/owner/assistant',{method:'POST',body:JSON.stringify({question:$('pa-question').value})}).then(r=>r.json());$('pa-answer').textContent=[data.answer.summary,...data.answer.nextSteps.map(s=>'• '+s),`Based on ${data.coverage.contacts} recent contacts and ${data.coverage.inquiries} recent inquiries.`].join('\n\n');status('');}catch(e){status(e.message,true);}finally{$('pa-ask').disabled=false;}};
 $('refresh').onclick=()=>refresh().catch(e=>status(e.message,true));
 $('export').onclick=async()=>{try{const r=await api('/api/owner/contacts?format=csv');const url=URL.createObjectURL(await r.blob());const a=node('a','');a.href=url;a.download='legacy-visitor-contacts.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);status('Contact sheet prepared: up to 10,000 recent visitor records and 10,000 submitted inquiries, with their separate sources and permissions.');}catch(e){status(e.message,true);}};
-$('sign-in').onclick=async()=>{try{await auth.signIn.social({provider:'google',callbackURL:location.origin+'/owner/'});}catch(e){status('Google sign-in could not start. Please try again.',true);}};
-$('sign-out').onclick=async()=>{await auth.signOut();$('workspace').hidden=true;$('login').hidden=false;$('contacts').replaceChildren();$('inquiries').replaceChildren();$('detail').replaceChildren();$('pa-answer').textContent='';status('Signed out.');};
-try{const r=await fetch('/api/owner/config',{cache:'no-store'});if(!r.ok)throw Error('Owner sign-in is not connected on this deployment.');const config=await r.json();auth=createAuthClient(config.authUrl);$('sign-in').disabled=false;const session=await auth.getSession();if(session.data?.user)await refresh();else status('Sign in to open your workspace.');}catch(e){status(e.message,true);}
+$('login-form').onsubmit=async event=>{
+  event.preventDefault();
+  const password=$('owner-password').value, pin=$('owner-pin-setup').value;
+  $('sign-in').disabled=true; status('Checking your password…');
+  try{
+    const r=await fetch('/api/owner/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password,pin}),credentials:'same-origin',cache:'no-store'});
+    const data=await r.json().catch(()=>({}));
+    if(!r.ok) throw Error(data.error||'The password did not match.');
+    $('owner-password').value=''; $('owner-pin-setup').value='';
+    await refresh();
+  }catch(e){status(e.message,true);}finally{$('sign-in').disabled=false;}
+};
+$('sign-out').onclick=async()=>{try{await fetch('/api/owner/login',{method:'DELETE',credentials:'same-origin',cache:'no-store'});}catch{}showLogin();$('contacts').replaceChildren();$('inquiries').replaceChildren();$('detail').replaceChildren();$('pa-answer').textContent='';status('Signed out.');};
+try{
+  const r=await fetch('/api/owner/login',{credentials:'same-origin',cache:'no-store'});
+  if(!r.ok) throw Error('Owner sign-in is not connected on this deployment.');
+  const {configured}=await r.json();
+  $('sign-in').disabled=false;
+  $('owner-pin-row').hidden=Boolean(configured);
+  $('login-note').textContent=configured?'Enter your owner password to open your private records.':'Choose a password. Your owner PIN authorizes this once, then the password is all you need.';
+  try{await refresh();}catch{status(configured?'Enter your owner password to open your workspace.':'Choose your owner password to open the workspace.');}
+}catch(e){status(e.message,true);}
 
 function showResearch(data){const out=$('competitor-results');out.replaceChildren();if(data.insight){out.append(node('p',data.insight.summary));for(const [title,items] of [['Published observations',data.insight.observations],['Opportunities to consider',data.insight.opportunities]]){out.append(node('h3',title));for(const item of items)out.append(node('p',`${item.text} (Sources: ${item.sourceIds.join(', ')})`));}out.append(node('p','Unknowns: '+data.insight.unknowns.join(' ')));}for(const source of data.sources){const a=node('a',`${source.id}: ${source.title} — read ${new Date(source.asOf).toLocaleString()}`);a.href=source.url;a.target='_blank';a.rel='noopener noreferrer';out.append(node('p','').appendChild(a).parentNode);}for(const failure of data.failures||[])out.append(node('p',`${failure.url}: ${failure.error||failure.reason||'Could not retrieve this page.'}`));}
 $('competitor-form').onsubmit=async event=>{event.preventDefault();$('competitor-run').disabled=true;$('competitor-results').replaceChildren();status('Reading the published sources…');try{const data=await api('/api/owner/competitors',{method:'POST',body:JSON.stringify({urls:$('competitor-urls').value.split(/\n/).map(s=>s.trim()).filter(Boolean)})}).then(r=>r.json());showResearch(data);status('Source review complete.');}catch(e){if(e.data?.sources)showResearch(e.data);status(e.message,true);}finally{$('competitor-run').disabled=false;}};
