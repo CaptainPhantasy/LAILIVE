@@ -1,0 +1,241 @@
+{
+  "kind": "invoice",
+  "sample": true,
+  "title": "Invoice",
+  "reference": "INV-GROW",
+  "subject": "Growth test \u2014 repeated headings across pages",
+  "date": "2026-11-20",
+  "until": "2026-11-27",
+  "client": {
+    "company": "Growth Test Client",
+    "name": "Ivy Row",
+    "address": [
+      "12 Test Lane"
+    ]
+  },
+  "intro": "A deliberate 35-line invoice proving headings repeat and footers persist.",
+  "sections": [],
+  "currency": "USD",
+  "items": [
+    {
+      "description": "Growth test item 01 \u2014 plain-language line so the five-year test stays honest",
+      "detail": "Included work described for the dispatch office.",
+      "qty": 1,
+      "unit_price": 10.0
+    },
+    {
+      "description": "Growth test item 02 \u2014 plain-language line so the five-year test stays honest",
+      "detail": "Included work described for the dispatch office.",
+      "qty": 1,
+      "unit_price": 10.0
+    },
+    {
+      "description": "Growth test item 03 \u2014 plain-language line so the five-year test stays honest",
+      "detail": "Included work described for the dispatch office.",
+      "qty": 1,
+      "unit_price": 10.0
+    },
+    {
+      "description": "Growth test item 04 \u2014 plain-language line so the five-year test stays honest",
+      "detail": "Included work described for the dispatch office.",
+      "qty": 1,
+      "unit_price": 10.0
+    },
+    {
+      "description": "Growth test item 05 \u2014 plain-language line so the five-year test stays honest",
+      "detail": "Included work described for the dispatch office.",
+      "qty": 1,
+      "unit_price": 10.0
+    },
+    {
+      "description": "Growth test item 06 \u2014 plain-language line so the five-year test stays honest",
+      "detail": "Included work described for the dispatch office.",
+      "qty": 1,
+      "unit_price": 10.0
+    },
+    {
+      "description": "Growth test item 07 \u2014 plain-language line so the five-year test stays honest",
+      "detail": "Included work described for the dispatch office.",
+      "qty": 1,
+      "unit_price": 10.0
+    },
+    {
+      "description": "Growth test item 08 \u2014 plain-language line so the five-year test stays honest",
+      "detail": "Included work described for the dispatch office.",
+      "qty": 1,
+      "unit_price": 10.0
+    },
+    {
+      "description": "Growth test item 09 \u2014 plain-language line so the five-year test stays honest",
+      "detail": "Included work described for the dispatch office.",
+      "qty": 1,
+      "unit_price": 10.0
+    },
+    {
+      "description": "Growth test item 10 \u2014 plain-language line so the five-year test stays honest",
+      "detail": "Included work described for the dispatch office.",
+      "qty": 1,
+      "unit_price": 10.0
+    },
+    {
+      "description": "Growth test item 11 \u2014 plain-language line so the five-year test stays honest",
+      "detail": "Included work described for the dispatch office.",
+      "qty": 1,
+      "unit_price": 10.0
+    },
+    {
+      "description": "Growth test item 12 \u2014 plain-language line so the five-year test stays honest",
+      "detail": "Included work described for the dispatch office.",
+      "qty": 1,
+      "unit_price": 10.0
+    },
+    {
+      "description": "Growth test item 13 \u2014 plain-language line so the five-year test stays honest",
+      "detail": "Included work described for the dispatch office.",
+      "qty": 1,
+      "unit_price": 10.0
+    },
+    {
+      "description": "Growth test item 14 \u2014 plain-language line so the five-year test stays honest",
+      "detail": "Included work described for the dispatch office.",
+      "qty": 1,
+      "unit_price": 10.0
+    },
+    {
+      "description": "Growth test item 15 \u2014 plain-language line so the five-year test stays honest",
+      "detail": "Included work described for the dispatch office.",
+      "qty": 1,
+      "unit_price": 10.0
+    },
+    {
+      "description": "Growth test item 16 \u2014 plain-language line so the five-year test stays honest",
+      "detail": "Included work described for the dispatch office.",
+      "qty": 1,
+      "unit_price": 10.0
+    },
+    {
+      "description": "Growth test item 17 \u2014 plain-language line so the five-year test stays honest",
+      "detail": "Included work described for the dispatch office.",
+      "qty": 1,
+      "unit_price": 10.0
+    },
+    {
+      "description": "Growth test item 18 \u2014 plain-language line so the five-year test stays honest",
+      "detail": "Included work described for the dispatch office.",
+      "qty": 1,
+      "unit_price": 10.0
+    },
+    {
+      "description": "Growth test item 19 \u2014 plain-language line so the five-year test stays honest",
+      "detail": "Included work described for the dispatch office.",
+      "qty": 1,
+      "unit_price": 10.0
+    },
+    {
+      "description": "Growth test item 20 \u2014 plain-language line so the five-year test stays honest",
+      "detail": "Included work described for the dispatch office.",
+      "qty": 1,
+      "unit_price": 10.0
+    },
+    {
+      "description": "Growth test item 21 \u2014 plain-language line so the five-year test stays honest",
+      "detail": "Included work described for the dispatch office.",
+      "qty": 1,
+      "unit_price": 10.0
+    },
+    {
+      "description": "Growth test item 22 \u2014 plain-language line so the five-year test stays honest",
+      "detail": "Included work described for the dispatch office.",
+      "qty": 1,
+      "unit_price": 10.0
+    },
+    {
+      "description": "Growth test item 23 \u2014 plain-language line so the five-year test stays honest",
+      "detail": "Included work described for the dispatch office.",
+      "qty": 1,
+      "unit_price": 10.0
+    },
+    {
+      "description": "Growth test item 24 \u2014 plain-language line so the five-year test stays honest",
+      "detail": "Included work described for the dispatch office.",
+      "qty": 1,
+      "unit_price": 10.0
+    },
+    {
+      "description": "Growth test item 25 \u2014 plain-language line so the five-year test stays honest",
+      "detail": "Included work described for the dispatch office.",
+      "qty": 1,
+      "unit_price": 10.0
+    },
+    {
+      "description": "Growth test item 26 \u2014 plain-language line so the five-year test stays honest",
+      "detail": "Included work described for the dispatch office.",
+      "qty": 1,
+      "unit_price": 10.0
+    },
+    {
+      "description": "Growth test item 27 \u2014 plain-language line so the five-year test stays honest",
+      "detail": "Included work described for the dispatch office.",
+      "qty": 1,
+      "unit_price": 10.0
+    },
+    {
+      "description": "Growth test item 28 \u2014 plain-language line so the five-year test stays honest",
+      "detail": "Included work described for the dispatch office.",
+      "qty": 1,
+      "unit_price": 10.0
+    },
+    {
+      "description": "Growth test item 29 \u2014 plain-language line so the five-year test stays honest",
+      "detail": "Included work described for the dispatch office.",
+      "qty": 1,
+      "unit_price": 10.0
+    },
+    {
+      "description": "Growth test item 30 \u2014 plain-language line so the five-year test stays honest",
+      "detail": "Included work described for the dispatch office.",
+      "qty": 1,
+      "unit_price": 10.0
+    },
+    {
+      "description": "Growth test item 31 \u2014 plain-language line so the five-year test stays honest",
+      "detail": "Included work described for the dispatch office.",
+      "qty": 1,
+      "unit_price": 10.0
+    },
+    {
+      "description": "Growth test item 32 \u2014 plain-language line so the five-year test stays honest",
+      "detail": "Included work described for the dispatch office.",
+      "qty": 1,
+      "unit_price": 10.0
+    },
+    {
+      "description": "Growth test item 33 \u2014 plain-language line so the five-year test stays honest",
+      "detail": "Included work described for the dispatch office.",
+      "qty": 1,
+      "unit_price": 10.0
+    },
+    {
+      "description": "Growth test item 34 \u2014 plain-language line so the five-year test stays honest",
+      "detail": "Included work described for the dispatch office.",
+      "qty": 1,
+      "unit_price": 10.0
+    },
+    {
+      "description": "Growth test item 35 \u2014 plain-language line so the five-year test stays honest",
+      "detail": "Included work described for the dispatch office.",
+      "qty": 1,
+      "unit_price": 10.0
+    }
+  ],
+  "tax": 0,
+  "terms": [
+    "Synthetic growth test \u2014 not a real invoice."
+  ],
+  "next_step": "File this under evidence; no action needed.",
+  "signoff": {
+    "closing": "Thanks,",
+    "name": "Douglas Talley",
+    "role": "Founder, Legacy AI"
+  }
+}

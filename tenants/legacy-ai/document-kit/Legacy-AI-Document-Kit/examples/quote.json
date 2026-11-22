@@ -1,0 +1,40 @@
+{
+  "kind": "quote",
+  "sample": true,
+  "reference": "Q-026",
+  "date": "2026-11-02",
+  "until": "2026-11-16",
+  "client": {
+    "company": "Juniper Bench Service Co.",
+    "name": "Casey Morgan"
+  },
+  "subject": "After-hours call intake",
+  "intro": "When a customer calls after closing, your office will have their name, callback number and reason for calling before the next shift starts.",
+  "currency": "USD",
+  "items": [
+    {
+      "description": "After-hours call setup",
+      "detail": "Write the greeting, collect caller details and route each summary to dispatch.",
+      "qty": 1,
+      "unit_price": "640.00"
+    },
+    {
+      "description": "Routing and test calls",
+      "detail": "Test routine requests and urgent callbacks with your dispatcher.",
+      "qty": 2,
+      "unit": "hr",
+      "unit_price": "95.00"
+    },
+    {
+      "description": "Dispatcher handoff",
+      "detail": "Walk the office through a callback and leave a one-page reference.",
+      "qty": 1,
+      "unit_price": "120.00"
+    }
+  ],
+  "tax": "0.00",
+  "terms": [
+    "This covers setup and handoff. We’ll quote any ongoing call service separately."
+  ],
+  "next_step": "To move ahead, reply with the name of the dispatcher who will join the test calls."
+}

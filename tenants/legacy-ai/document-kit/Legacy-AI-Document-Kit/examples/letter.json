@@ -1,0 +1,26 @@
+{
+  "kind": "letter",
+  "sample": true,
+  "date": "2026-11-20",
+  "client": {
+    "name": "Casey Morgan",
+    "company": "Juniper Bench Service Co.",
+    "address": ["Attn. Dispatch Office"]
+  },
+  "subject": "Your first week of after-hours calls",
+  "salutation": "Dear Casey,",
+  "intro": "Your dispatcher can now start the morning with a short list of people to call back. Each summary includes the caller’s name, number and the job they described.",
+  "sections": [
+    {
+      "body": [
+        "For the first week, ask whoever opens the office to check the first three summaries against their callback notes. If the caller had to explain the job twice, mark the question that would have saved them the trouble.",
+        "Send me those examples on Friday. I’ll use them to tighten the greeting and the questions your callers hear."
+      ]
+    }
+  ],
+  "signoff": {
+    "closing": "Thanks,",
+    "name": "Douglas Talley",
+    "role": "Founder, Legacy AI"
+  }
+}

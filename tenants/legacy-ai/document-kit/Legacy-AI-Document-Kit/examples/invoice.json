@@ -1,0 +1,38 @@
+{
+  "kind": "invoice",
+  "sample": true,
+  "reference": "INV-026",
+  "date": "2026-11-20",
+  "until": "2026-12-04",
+  "client": {
+    "company": "Juniper Bench Service Co.",
+    "name": "Casey Morgan"
+  },
+  "subject": "After-hours call intake",
+  "intro": "Setup and handoff for the after-hours line, covering the work listed in quote Q-026.",
+  "currency": "USD",
+  "items": [
+    {
+      "description": "After-hours call setup",
+      "detail": "Configured the greeting, intake questions and delivery to dispatch.",
+      "qty": 1,
+      "unit_price": "640.00"
+    },
+    {
+      "description": "Routing and test calls",
+      "detail": "Checked routine and urgent calls with the dispatcher.",
+      "qty": 2,
+      "unit": "hr",
+      "unit_price": "95.00"
+    },
+    {
+      "description": "Dispatcher handoff",
+      "detail": "Completed the walkthrough and delivered the callback reference.",
+      "qty": 1,
+      "unit_price": "120.00"
+    }
+  ],
+  "tax": "0.00",
+  "paid": "250.00",
+  "next_step": "If a line item looks unfamiliar, contact Douglas and mention INV-026."
+}

@@ -1,0 +1,24 @@
+{
+  "kind": "brief",
+  "sample": true,
+  "title": "Dispatch handoff",
+  "reference": "BR-026",
+  "date": "2026-11-20",
+  "client": {
+    "name": "Casey Morgan",
+    "company": "Juniper Bench Service Co."
+  },
+  "subject": "After-hours callback routine",
+  "intro": "The opening dispatcher owns the overnight callback list. Each entry should tell them who called, how to reach them and what the customer needs.",
+  "sections": [
+    {
+      "heading": "At the start of the shift",
+      "body": ["Open the overnight call summaries and check for urgent requests first. Call the customer, offer the next available appointment and record the outcome in the dispatch calendar."]
+    },
+    {
+      "heading": "When a detail is missing",
+      "body": ["If a summary leaves out the address or callback number, mark the missing detail in the dispatch notes. Give Douglas the time of the call so he can trace the problem."]
+    }
+  ],
+  "next_step": "Casey will review the first five callbacks with the dispatcher and send Douglas any questions that customers had to answer twice."
+}

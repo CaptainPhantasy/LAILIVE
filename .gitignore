@@ -6,3 +6,12 @@ node_modules/
 __pycache__/
 .vercel
 .env*
+
+# Tenant tooling + OS junk (2026-11-20)
+.DS_Store
+tenants/legacy-ai/tools/.venv/
+**/.venv/
+
+# Internal tenant docs/evidence — local only, never in the public tree (2026-11-22)
+tenants/legacy-ai/.internal/
+SSOT.md
