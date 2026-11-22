@@ -217,3 +217,126 @@ test('a PIN spoken as words or dialed as digits both verify', async () => {
     assert.ok(spoken.sections.main.find(step => step.record_call));
   } finally { await pg.close(); }
 });
+
+import { net7Due } from '../lib/document-records.js';
+
+test('the SWAIG schema offers optional items while the prompt stays small and secret-free', async () => {
+  const pg = new PGlite(); const db = drizzle(pg);
+  try {
+    const handlers = createOwnerDocumentHandler({ getDb: () => db, env, mail: async () => true });
+    const verified = await (await handlers.owner(req({ call: { call_id: 'call-schema', from: '+18123405761' }, vars: { prompt_value: '123456' } }))).json();
+    const tool = verified.sections.main.find(step => step.ai).ai.SWAIG.functions[0];
+    assert.ok(!JSON.stringify(verified).includes('123456'));
+    const items = tool.parameters.properties.items;
+    assert.equal(items.type, 'array');
+    assert.equal(items.maxItems, 50);
+    assert.deepEqual(items.items.required, ['description', 'qty', 'unit_price']);
+    assert.deepEqual(tool.parameters.required, ['kind', 'title', 'content'], 'items stay optional');
+    assert.match(tool.parameters.properties.items.items.properties.qty.type, /^number$/);
+    const prompt = verified.sections.main.find(step => step.ai).ai.prompt.text;
+    assert.match(prompt, /list the confirmed line items exactly as Douglas stated them; never invent prices/);
+    assert.match(prompt, /Invoices are MANUAL/);
+    assert.ok(prompt.length < 700, `the dictated prompt stays minimal (${prompt.length} chars)`);
+  } finally { await pg.close(); }
+});
+
+test('items ride along on the draft, dedupe identical retries, and refuse on non-quote kinds', async () => {
+  const pg = new PGlite(); const db = drizzle(pg); const sent = [];
+  const handlers = createOwnerDocumentHandler({ getDb: () => db, env, mail: async value => sent.push(value) });
+  try {
+    const verified = await (await handlers.owner(req({ call: { call_id: 'call-items', from: '+18123405761' }, vars: { prompt_value: '123456' } }))).json();
+    const tool = verified.sections.main.find(step => step.ai).ai.SWAIG.functions[0];
+    const items = [{ description: 'Cabinet install labor', qty: 4, unit_price: 85 }, { description: 'Hardware kit', qty: 2, unit_price: 19.99 }];
+    const report = { call_id: 'call-items', arguments: { kind: 'field_report', title: 'Report with items', content: 'Not allowed.', recipient: 'customer@example.test', items } };
+    assert.equal((await handlers.owner(req(report, tool.web_hook_url, false))).status, 400);
+    const draft = { call_id: 'call-items', arguments: { kind: 'invoice', title: 'Cabinet invoice', content: 'Work completed as discussed.', recipient: 'customer@example.test', items } };
+    const saved = await (await handlers.owner(req(draft, tool.web_hook_url, false))).json();
+    assert.match(saved.response, /saved/);
+    const retry = await (await handlers.owner(req(draft, tool.web_hook_url, false))).json();
+    assert.match(retry.response, /already saved/);
+    const rows = (await pg.query('SELECT id,items FROM legacy_owner_documents')).rows;
+    assert.equal(rows.length, 1);
+    assert.deepEqual(rows[0].items, [{ description: 'Cabinet install labor', qty: '4', unit_price: '85' }, { description: 'Hardware kit', qty: '2', unit_price: '19.99' }], 'quantities normalize to their plain-decimal String() form');
+    const differing = await (await handlers.owner(req({ ...draft, arguments: { ...draft.arguments, items: [items[0]] } }, tool.web_hook_url, false))).json();
+    assert.match(differing.response, /saved/, 'differing items create a distinct draft');
+    assert.equal((await pg.query('SELECT count(*)::int AS n FROM legacy_owner_documents')).rows[0].n, 2);
+  } finally { await pg.close(); }
+});
+
+test('approving an invoiced dictation registers one legacy invoice with Net 7 and INV-001, and replays cannot double-register', async () => {
+  const pg = new PGlite(); const db = drizzle(pg); const sent = [];
+  const handlers = createOwnerDocumentHandler({ getDb: () => db, env, mail: async value => sent.push(value) });
+  try {
+    const verified = await (await handlers.owner(req({ call: { call_id: 'call-inv', from: '+18123405761' }, vars: { prompt_value: '123456' } }))).json();
+    const tool = verified.sections.main.find(step => step.ai).ai.SWAIG.functions[0];
+    const draft = { call_id: 'call-inv', arguments: { kind: 'invoice', title: 'Cabinet invoice', content: 'Work completed as discussed.', recipient: 'customer@example.test', items: [{ description: 'Cabinet install labor', qty: 4, unit_price: 85 }] } };
+    await handlers.owner(req(draft, tool.web_hook_url, false));
+    const link = sent[0].body.match(/https:\/\/legacyai\.space\/api\/frontdesk\/document\?token=\S+/)[0];
+    const approve = new FormData(); approve.set('action', 'approve'); approve.set('version', '1'); approve.set('title', 'Cabinet invoice'); approve.set('content', 'Work completed as discussed.');
+    assert.equal((await handlers.document(new Request(link, { method: 'POST', body: approve }))).status, 303);
+    assert.equal(sent.at(-1).to, 'customer@example.test');
+    const invoice = (await pg.query('SELECT document,amount_cents,due_date::text AS due_date,status FROM legacy_invoices')).rows;
+    assert.equal(invoice.length, 1);
+    assert.equal(invoice[0].amount_cents, 34000);
+    assert.equal(invoice[0].due_date, net7Due(new Date()), 'due date is the approval day plus seven');
+    assert.equal(invoice[0].status, 'open');
+    const doc = (await pg.query('SELECT reference,items FROM legacy_owner_documents')).rows[0];
+    assert.equal(doc.reference, 'INV-001');
+    assert.equal((await pg.query("SELECT count(*)::int AS n FROM legacy_invoice_events WHERE event='registered'")).rows[0].n, 1);
+    assert.equal((await handlers.document(new Request(link, { method: 'POST', body: approve }))).status, 409);
+    assert.equal((await pg.query('SELECT count(*)::int AS n FROM legacy_invoices')).rows[0].n, 1, 'the replay created no second row');
+    assert.equal((await pg.query("SELECT count(*)::int AS n FROM legacy_invoice_events WHERE event='registered'")).rows[0].n, 1);
+  } finally { await pg.close(); }
+});
+
+test('approving a quote creates one contact and inquiry pair and reuses the contact for the next quote', async () => {
+  const pg = new PGlite(); const db = drizzle(pg); const sent = [];
+  const handlers = createOwnerDocumentHandler({ getDb: () => db, env, mail: async value => sent.push(value) });
+  try {
+    const verified = await (await handlers.owner(req({ call: { call_id: 'call-quote', from: '+18123405761' }, vars: { prompt_value: '123456' } }))).json();
+    const tool = verified.sections.main.find(step => step.ai).ai.SWAIG.functions[0];
+    const approveFor = async (callId, title, content) => {
+      await handlers.owner(req({ call_id: callId, arguments: { kind: 'quote', title, content, recipient: 'customer@example.test' } }, tool.web_hook_url, false));
+      const link = sent.at(-1).body.match(/https:\/\/legacyai\.space\/api\/frontdesk\/document\?token=\S+/)[0];
+      const form = new FormData(); form.set('action', 'approve'); form.set('version', '1'); form.set('title', title); form.set('content', content);
+      assert.equal((await handlers.document(new Request(link, { method: 'POST', body: form }))).status, 303);
+    };
+    await pg.query('CREATE TABLE IF NOT EXISTS legacy_consent_events (id uuid PRIMARY KEY, inquiry_id uuid, contact_id uuid, purpose text, channel text, choice text, notice_version text, notice_text text, action text, created_at timestamptz NOT NULL DEFAULT now())');
+    await approveFor('call-quote', 'Kitchen quote', 'Cabinet and hardware quote.');
+    assert.equal((await pg.query('SELECT count(*)::int AS n FROM legacy_contacts')).rows[0].n, 1);
+    assert.equal((await pg.query('SELECT count(*)::int AS n FROM legacy_inquiries')).rows[0].n, 1);
+    assert.equal((await pg.query('SELECT reference FROM legacy_owner_documents')).rows[0].reference, 'Q-001');
+    const inquiry = (await pg.query('SELECT message,catalog_version,status FROM legacy_inquiries')).rows[0];
+    assert.equal(inquiry.message, 'Kitchen quote\nCabinet and hardware quote.');
+    assert.equal(inquiry.status, 'received');
+    await approveFor('call-quote', 'Bathroom quote', 'Vanity and mirror quote.');
+    assert.equal((await pg.query('SELECT count(*)::int AS n FROM legacy_contacts')).rows[0].n, 1, 'the contact is reused by email');
+    assert.equal((await pg.query('SELECT count(*)::int AS n FROM legacy_inquiries')).rows[0].n, 2);
+    assert.equal((await pg.query("SELECT count(*)::int AS n FROM legacy_consent_events")).rows[0].n, 0, 'no fabricated consent');
+  } finally { await pg.close(); }
+});
+
+test('a prose-only invoice registers nothing; the review copy stays unbranded until delivery', async () => {
+  const pg = new PGlite(); const db = drizzle(pg); const sent = [];
+  const handlers = createOwnerDocumentHandler({ getDb: () => db, env, mail: async value => sent.push(value) });
+  try {
+    await pg.query(`CREATE TABLE IF NOT EXISTS legacy_invoices (document uuid PRIMARY KEY, amount_cents integer NOT NULL, due_date date NOT NULL, status text NOT NULL DEFAULT 'open', paid_at timestamptz, last_reminded_at timestamptz, last_due_notice_at timestamptz, job uuid, version integer NOT NULL DEFAULT 1, created_at timestamptz NOT NULL DEFAULT now())`);
+    const verified = await (await handlers.owner(req({ call: { call_id: 'call-prose', from: '+18123405761' }, vars: { prompt_value: '123456' } }))).json();
+    const tool = verified.sections.main.find(step => step.ai).ai.SWAIG.functions[0];
+    const draft = { call_id: 'call-prose', arguments: { kind: 'invoice', title: 'Service invoice', content: 'Labor and materials as discussed on the call.', recipient: 'customer@example.test' } };
+    await handlers.owner(req(draft, tool.web_hook_url, false));
+    const link = sent[0].body.match(/https:\/\/legacyai\.space\/api\/frontdesk\/document\?token=\S+/)[0];
+    const reviewCopy = Buffer.from(await (await handlers.document(new Request(link + '&pdf=1'))).arrayBuffer());
+    assert.ok(reviewCopy.length < 5000, 'the draft PDF is the small Courier review copy');
+    const approve = new FormData(); approve.set('action', 'approve'); approve.set('version', '1'); approve.set('title', 'Service invoice'); approve.set('content', 'Labor and materials as discussed on the call.');
+    assert.equal((await handlers.document(new Request(link, { method: 'POST', body: approve }))).status, 303);
+    assert.equal((await pg.query('SELECT count(*)::int AS n FROM legacy_invoices')).rows[0].n, 0, 'a prose-only invoice never fabricates an amount');
+    const doc = (await pg.query('SELECT reference,items FROM legacy_owner_documents')).rows[0];
+    assert.equal(doc.reference, 'INV-001', 'the reference is still issued for the document');
+    assert.equal(doc.items, null);
+    const branded = Buffer.from(await (await handlers.document(new Request(link + '&pdf=1'))).arrayBuffer());
+    assert.ok(branded.length > 15000, 'the delivered document renders through the branded stationery');
+    const { PDFDocument } = await import('pdf-lib');
+    assert.equal((await PDFDocument.load(branded)).getTitle(), 'Service invoice');
+  } finally { await pg.close(); }
+});

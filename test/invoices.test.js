@@ -97,3 +97,34 @@ test('a paid invoice shows no reminder form and bad links are refused', async ()
     assert.equal((await handler(new Request('https://legacyai.space/api/frontdesk/invoices?token=bad'))).status, 401);
   } finally { await pg.close(); }
 });
+
+import { createInvoiceRecord, ensureInvoiceSchema } from '../lib/invoices.js';
+
+test('createInvoiceRecord is the single insert path with identical validation and idempotency', async () => {
+  const pg = new PGlite(); const db = drizzle(pg);
+  try {
+    await pg.query(`CREATE TABLE IF NOT EXISTS legacy_jobs (id uuid PRIMARY KEY, job_id text UNIQUE NOT NULL, customer_name text NOT NULL, service text NOT NULL DEFAULT '', address text NOT NULL DEFAULT '', status text NOT NULL DEFAULT 'scheduled', assigned_to text NOT NULL DEFAULT '', source text NOT NULL DEFAULT '', created_at timestamptz NOT NULL DEFAULT now())`);
+    const job = (await pg.query(`INSERT INTO legacy_jobs(id,job_id,customer_name) VALUES ('99999999-8888-4777-8666-555555555555','JOB-1','Pat') RETURNING id`)).rows[0];
+    await ensureInvoiceSchema(db);
+    await ensureInvoiceSchema(db), 'the schema path is idempotent';
+    const created = await createInvoiceRecord(db, { document: docId, amount_cents: 10000, due_date: '2026-10-20', job_id: 'JOB-1' });
+    assert.equal(created.registered, true);
+    assert.equal(created.amount_cents, 10000);
+    assert.equal(created.due_date, '2026-10-20');
+    assert.equal(String(created.job_id), String(job.id), 'the job id resolves to legacy_jobs.id');
+    const replay = await createInvoiceRecord(db, { document: docId, amount_cents: 10000, due_date: '2026-10-20', job_id: 'JOB-1' });
+    assert.deepEqual(replay, { registered: false });
+    assert.equal((await pg.query('SELECT count(*)::int AS n FROM legacy_invoices')).rows[0].n, 1);
+    assert.equal((await pg.query("SELECT count(*)::int AS n FROM legacy_invoice_events WHERE event='registered'")).rows[0].n, 1);
+    const withoutJob = await createInvoiceRecord(db, { document: 'bbbbbbbb-cccc-4ddd-8eee-ffffffffffff', amount_cents: 250, due_date: '2026-11-01' });
+    assert.equal(withoutJob.registered, true);
+    assert.equal(withoutJob.job_id, null);
+    for (const [bad, message] of [
+      [{ amount_cents: 0, due_date: '2026-10-20' }, 'A positive amount in cents is required.'],
+      [{ amount_cents: 100000001, due_date: '2026-10-20' }, 'A positive amount in cents is required.'],
+      [{ amount_cents: 10.5, due_date: '2026-10-20' }, 'A positive amount in cents is required.'],
+      [{ amount_cents: 5000, due_date: 'soon' }, 'A due date is required.'],
+      [{ amount_cents: 5000, due_date: '2026-10-20', job_id: 'JOB-404' }, 'No job matches that job id.'],
+    ]) await assert.rejects(createInvoiceRecord(db, { document: 'cccccccc-dddd-4eee-8fff-000000000000', ...bad }), error => error.status === 400 && error.message === message);
+  } finally { await pg.close(); }
+});
