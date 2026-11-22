@@ -14,6 +14,8 @@ test('money math is exact through string arithmetic, never floating multiplicati
   assert.equal(itemsTotalCents([{ description: 'Numbers too', qty: 4, unit_price: 19.99 }]), 7996, 'number forms normalize through String()');
   assert.equal(itemsTotalCents([]), 0);
   assert.equal(itemsTotalCents([{ description: 'x', qty: '1e3', unit_price: '19.99' }]), 1999000, 'the schema is the gate; the sum tolerates without throwing');
+  assert.equal(itemsTotalCents([{ description: 'Half-cent boundary', qty: '0.29', unit_price: '0.50' }]), 15, '0.29 x $0.50 rounds half-up exactly (14.5 -> 15), never float-rounded');
+  assert.equal(itemsTotalCents([{ description: 'Tenth of a cent', qty: '1', unit_price: '19.99' }]), 1999, 'two-decimal prices stay exact');
 });
 
 test('net7Due adds seven calendar days in the owner time zone', () => {
