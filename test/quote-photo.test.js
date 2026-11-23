@@ -105,3 +105,40 @@ test('a priced quote is sent to the customer once, then locks', async () => {
     assert.equal(sent.filter(message => /Quote sent: send\.png/.test(message.subject)).length, OWNER_ADDRESSES.length);
   } finally { await pg.close(); }
 });
+
+test('a sent quote becomes exactly one inquiry record, and a blocked resend creates none', async () => {
+  const pg = new PGlite(); const db = drizzle(pg); const sent = [];
+  const handler = createQuotePhotoHandler({ getDb: () => db, mail: async message => { sent.push(message); return true; }, env, describe: failing });
+  try {
+    const created = await (await handler(upload({ mime: 'image/png', data: photo, filename: 'record.png' }))).json();
+    await handler(save(created.id, { quote: 'Replace the trap and the supply line.', price: '180.00' }));
+    const page = await handler(sendQuote(created.id, 'Customer@Example.com'));
+    assert.match(await page.text(), /Quote sent to customer@example\.com/, 'the send path lowercases the address before sending');
+    const inquiry = (await pg.query('SELECT id,contact_id,message,catalog_version,status FROM legacy_inquiries')).rows[0];
+    assert.match(inquiry.message, /Photo quote record\.png: Replace the trap/);
+    assert.equal(inquiry.status, 'received');
+    const contact = (await pg.query('SELECT id,email FROM legacy_contacts')).rows[0];
+    assert.equal(contact.email, 'customer@example.com', 'the inquiry stores the same address the quote was sent to');
+    assert.equal(inquiry.contact_id, contact.id);
+    const again = await handler(sendQuote(created.id, 'customer@example.com'));
+    assert.match(await again.text(), /already sent/);
+    assert.equal((await pg.query('SELECT count(*)::int AS n FROM legacy_inquiries')).rows[0].n, 1);
+    assert.equal((await pg.query('SELECT count(*)::int AS n FROM legacy_contacts')).rows[0].n, 1);
+  } finally { await pg.close(); }
+});
+
+test('a failed inquiry record never breaks the send', async () => {
+  const pg = new PGlite(); const db = drizzle(pg); const sent = [];
+  const handler = createQuotePhotoHandler({ getDb: () => db, mail: async message => { sent.push(message); return true; }, env, describe: failing });
+  try {
+    // A malformed legacy_contacts table makes the record write fail; the send must stand.
+    await pg.query('CREATE TABLE legacy_contacts (id uuid PRIMARY KEY)');
+    const created = await (await handler(upload({ mime: 'image/png', data: photo, filename: 'stand.png' }))).json();
+    await handler(save(created.id, { quote: 'Replace the trap and test the record failure path.', price: '95.00' }));
+    const page = await handler(sendQuote(created.id, 'customer@example.com'));
+    assert.equal(page.status, 200);
+    assert.match(await page.text(), /Quote sent to customer@example\.com/);
+    assert.equal(sent.filter(message => message.to === 'customer@example.com').length, 1, 'the customer email went out');
+    assert.equal((await pg.query('SELECT count(*)::int AS n FROM legacy_inquiries')).rows[0].n, 0);
+  } finally { await pg.close(); }
+});

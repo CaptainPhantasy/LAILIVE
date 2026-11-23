@@ -44,7 +44,8 @@
       "maxDuration": 60
     },
     "api/frontdesk/document.js": {
-      "maxDuration": 60
+      "maxDuration": 60,
+      "includeFiles": "lib/voice-report-fonts/**"
     },
     "api/frontdesk/booking.js": {
       "maxDuration": 60

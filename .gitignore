@@ -15,3 +15,5 @@ tenants/legacy-ai/tools/.venv/
 # Internal tenant docs/evidence — local only, never in the public tree (2026-11-22)
 tenants/legacy-ai/.internal/
 SSOT.md
+tenants/legacy-ai/.internal/.quarantine/
+.tmp/
